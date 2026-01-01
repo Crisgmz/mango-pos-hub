@@ -11,6 +11,7 @@ import {
   Bell,
   User
 } from "lucide-react";
+import logoMangopos from "@/assets/logo-mangopos.png";
 
 const navItems = [
   { path: "/", label: "Home", icon: Home },
@@ -31,9 +32,7 @@ export function TopNavigation() {
       <div className="flex items-center justify-between px-4 h-16">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-mango rounded-xl flex items-center justify-center shadow-md">
-            <span className="text-xl font-bold text-primary-foreground">🥭</span>
-          </div>
+          <img src={logoMangopos} alt="MangoPOS Logo" className="w-10 h-10 object-contain" />
           <span className="text-xl font-bold text-gradient-mango">MangoPOS</span>
         </Link>
 
