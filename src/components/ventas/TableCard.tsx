@@ -2,7 +2,7 @@ import { Users, Clock } from "lucide-react";
 
 interface TableCardProps {
   code: string;
-  status: "disponible" | "ocupado";
+  status: "disponible" | "ocupado" | "pagando";
   guests?: number;
   time?: string;
   total?: number;
