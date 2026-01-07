@@ -1,18 +1,11 @@
 import { useState } from "react";
 import { TableCard } from "./TableCard";
+import { OrderScreen } from "./OrderScreen";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table } from "@/types/pos";
+import { toast } from "sonner";
 
-interface Table {
-  id: string;
-  code: string;
-  status: "disponible" | "ocupado";
-  guests?: number;
-  time?: string;
-  total?: number;
-  zone: string;
-}
-
-const tables: Table[] = [
+const initialTables: Table[] = [
   { id: "1", code: "SP01", status: "disponible", zone: "salon" },
   { id: "2", code: "SP02", status: "ocupado", guests: 4, time: "45:23", total: 2850, zone: "salon" },
   { id: "3", code: "SP03", status: "ocupado", guests: 2, time: "28:10", total: 1200, zone: "salon" },
@@ -31,10 +24,41 @@ const tables: Table[] = [
 
 export function TablesGrid() {
   const [activeZone, setActiveZone] = useState("salon");
+  const [tables, setTables] = useState<Table[]>(initialTables);
+  const [selectedTable, setSelectedTable] = useState<Table | null>(null);
 
   const filteredTables = tables.filter((table) => table.zone === activeZone);
   const occupiedCount = filteredTables.filter((t) => t.status === "ocupado").length;
   const availableCount = filteredTables.filter((t) => t.status === "disponible").length;
+
+  const handleTableClick = (table: Table) => {
+    setSelectedTable(table);
+  };
+
+  const handleOrderComplete = (tableId?: string) => {
+    if (tableId) {
+      setTables((prev) =>
+        prev.map((t) =>
+          t.id === tableId
+            ? { ...t, status: "disponible" as const, guests: undefined, time: undefined, total: undefined }
+            : t
+        )
+      );
+      toast.success("Mesa liberada");
+    }
+    setSelectedTable(null);
+  };
+
+  // Show order screen when table is selected
+  if (selectedTable) {
+    return (
+      <OrderScreen
+        table={selectedTable}
+        onBack={() => setSelectedTable(null)}
+        onOrderComplete={handleOrderComplete}
+      />
+    );
+  }
 
   return (
     <div className="flex-1 p-6">
@@ -87,7 +111,7 @@ export function TablesGrid() {
                 guests={table.guests}
                 time={table.time}
                 total={table.total}
-                onClick={() => console.log("Selected table:", table.code)}
+                onClick={() => handleTableClick(table)}
               />
             ))}
           </div>
