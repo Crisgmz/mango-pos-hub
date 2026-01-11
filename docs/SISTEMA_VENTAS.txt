@@ -1,0 +1,735 @@
+================================================================================
+                        SISTEMA DE VENTAS - MANGOPOS
+                    Documentación de Funciones y Flujos
+================================================================================
+
+Última actualización: 2026-01-11
+Versión: 1.0
+
+================================================================================
+                              ÍNDICE
+================================================================================
+
+1. VISIÓN GENERAL DEL SISTEMA
+2. FLUJO DE VENTA POR SALÓN (MESA)
+3. FLUJO DE VENTA RÁPIDA (EXPRESS)
+4. GESTIÓN DEL CARRITO
+5. PERSONALIZACIÓN DE PRODUCTOS
+6. ENVÍO A COCINA
+7. DIVISIÓN DE CUENTA (SPLIT BILL)
+8. SISTEMA DE PAGOS
+9. COMPONENTES DEL SISTEMA
+10. TIPOS Y ESTRUCTURAS DE DATOS
+11. HOOKS PERSONALIZADOS
+12. ESTADOS Y TRANSICIONES
+
+================================================================================
+                    1. VISIÓN GENERAL DEL SISTEMA
+================================================================================
+
+El sistema de ventas de MangoPOS permite gestionar dos tipos principales de 
+ventas:
+
+A) VENTA POR SALÓN: Para restaurantes con servicio en mesa
+   - Selección de mesa por zona (Salón, Terraza, VIP)
+   - Gestión de estados de mesa (disponible, ocupado, pagando)
+   - Envío de pedidos a cocina
+   - División de cuentas
+
+B) VENTA RÁPIDA: Para ventas express sin mesa asignada
+   - Flujo simplificado
+   - Pago inmediato
+   - Ideal para takeout/delivery
+
+================================================================================
+                    2. FLUJO DE VENTA POR SALÓN (MESA)
+================================================================================
+
+PASO 1: SELECCIÓN DE ZONA Y MESA
+--------------------------------
+Ubicación: /ventas (TablesGrid.tsx)
+
+Acciones disponibles:
+- Ver mesas por zona (Salón Principal, Terraza, VIP)
+- Ver estado de cada mesa (disponible/ocupado)
+- Ver información de mesa ocupada (tiempo, comensales, total)
+- Seleccionar mesa para iniciar/continuar orden
+
+Estados de mesa:
+- disponible: Mesa libre, color verde
+- ocupado: Mesa con orden activa, color amarillo/naranja
+- pagando: Mesa en proceso de pago, color azul
+
+Datos mostrados por zona:
+- Cantidad de mesas disponibles
+- Cantidad de mesas ocupadas
+- Grid visual de mesas con estado
+
+
+PASO 2: PANTALLA DE ORDEN (OrderScreen)
+---------------------------------------
+Ubicación: OrderScreen.tsx
+
+Layout:
+- Sidebar izquierdo (380px): Carrito de compras
+- Área principal derecha: Catálogo de productos
+
+Header muestra:
+- Botón de regreso a mesas
+- Código de mesa (ej: "Mesa A1")
+- Estado de la orden
+- Botón "Asignar cliente"
+
+Acciones disponibles:
+- Navegar por categorías de productos
+- Buscar productos
+- Agregar productos al carrito
+- Personalizar productos con modificadores
+- Ver/editar carrito
+- Enviar a cocina
+- Dividir cuenta
+- Procesar pago
+
+
+PASO 3: SELECCIÓN DE PRODUCTOS (ProductCatalog)
+-----------------------------------------------
+Ubicación: ProductCatalog.tsx
+
+Tabs disponibles:
+- Categorías: Vista por categorías de productos
+- Menú: Vista completa del menú
+- Favoritos: Productos marcados como favoritos
+
+Funcionalidades:
+- Búsqueda por nombre de producto
+- Filtro por categoría
+- Grid de productos con imagen, nombre y precio
+- Click en producto → Agregar al carrito o abrir modal de personalización
+
+
+PASO 4: PERSONALIZACIÓN DE PRODUCTO (Modal)
+-------------------------------------------
+Ubicación: ProductCustomizationModal.tsx
+
+Se abre cuando: El producto tiene hasModifiers = true
+
+Contenido del modal:
+- Nombre y precio base del producto
+- Selector de cantidad (+/-)
+- Grupos de modificadores (required/optional)
+- Notas rápidas predefinidas
+- Campo de notas personalizadas
+- Precio total calculado
+
+Tipos de selección de modificadores:
+- Radio buttons: Cuando maxSelection = 1
+- Checkboxes: Cuando maxSelection > 1
+
+Validación:
+- Verificar que todos los grupos requeridos tengan selección
+- Verificar minSelection/maxSelection por grupo
+
+Botones:
+- Cancelar: Cierra modal sin agregar
+- Agregar al pedido: Agrega item al carrito
+
+
+PASO 5: GESTIÓN DEL CARRITO (Cart)
+----------------------------------
+Ubicación: Cart.tsx
+
+Muestra:
+- Header con código de mesa y contador de items
+- Lista de items con:
+  * Nombre del producto
+  * Modificadores seleccionados
+  * Notas
+  * Controles de cantidad (+/-)
+  * Precio por item
+  * Botón eliminar
+- Footer con:
+  * Subtotal
+  * ITBIS (18%)
+  * Total
+  * Botones de acción
+
+Acciones:
+- Modificar cantidad de items
+- Eliminar items
+- Limpiar carrito completo
+- Enviar a cocina
+- Dividir cuenta
+- Pagar
+
+
+PASO 6: ENVÍO A COCINA
+----------------------
+Trigger: Botón "Enviar a Cocina" en Cart
+
+Proceso:
+1. Cambiar estado orderSent a true
+2. Mostrar toast de confirmación
+3. Deshabilitar botón de envío (ya enviado)
+4. [Backend] Crear registro de orden con status "sent"
+5. [Backend] Crear print job para impresora de cocina
+
+Datos enviados:
+- ID de mesa/sesión
+- Items del carrito con modificadores
+- Notas especiales
+- Timestamp
+
+
+================================================================================
+                    3. FLUJO DE VENTA RÁPIDA (EXPRESS)
+================================================================================
+
+INICIO
+------
+Trigger: Botón "Venta Rápida" en VentasSidebar
+
+Diferencias con venta por salón:
+- No hay selección de mesa
+- isQuickSale = true
+- Header muestra "Venta Rápida" en lugar de código de mesa
+- No hay botón "Enviar a Cocina"
+- Pago directo después de agregar productos
+
+FLUJO:
+1. Click en "Venta Rápida"
+2. Se abre OrderScreen con isQuickSale=true
+3. Agregar productos al carrito
+4. Click en "Pagar"
+5. Procesar pago
+6. Orden completada
+
+
+================================================================================
+                    4. GESTIÓN DEL CARRITO (use-cart.ts)
+================================================================================
+
+HOOK: useCart()
+---------------
+Ubicación: src/hooks/use-cart.ts
+
+Estado:
+- items: CartItem[] - Lista de items en el carrito
+
+Funciones expuestas:
+
+addItem(product, quantity, modifiers, notes)
+--------------------------------------------
+- Crea nuevo CartItem con ID único
+- Calcula unitPrice (precio base + modificadores)
+- Calcula totalPrice (unitPrice * quantity)
+- Agrega al array de items
+
+updateItemQuantity(itemId, quantity)
+------------------------------------
+- Si quantity <= 0: elimina el item
+- Si quantity > 0: actualiza cantidad y recalcula totalPrice
+
+removeItem(itemId)
+------------------
+- Filtra el item del array
+
+clearCart()
+-----------
+- Resetea items a array vacío
+
+Valores calculados (useMemo):
+- subtotal: Suma de todos los totalPrice
+- tax: subtotal * 0.18 (ITBIS)
+- total: subtotal + tax
+- itemCount: Suma de todas las quantities
+
+
+================================================================================
+                    5. PERSONALIZACIÓN DE PRODUCTOS
+================================================================================
+
+ESTRUCTURA DE MODIFICADORES
+---------------------------
+
+ModifierGroup:
+- id: Identificador único
+- name: Nombre del grupo (ej: "Término de cocción")
+- required: Si es obligatorio seleccionar
+- minSelection: Mínimo de opciones a seleccionar
+- maxSelection: Máximo de opciones a seleccionar
+- modifiers: Array de Modifier
+
+Modifier:
+- id: Identificador único
+- name: Nombre del modificador (ej: "Término medio")
+- price: Precio adicional (puede ser 0)
+
+LÓGICA DE SELECCIÓN
+-------------------
+
+toggleModifier(groupId, modifier):
+1. Obtener grupo actual
+2. Si maxSelection = 1 (radio):
+   - Reemplazar selección anterior
+3. Si maxSelection > 1 (checkbox):
+   - Si ya está seleccionado: remover
+   - Si no está seleccionado y no excede max: agregar
+4. Actualizar estado
+
+CÁLCULO DE PRECIO
+-----------------
+unitPrice = producto.price + SUM(modificadores.price)
+totalPrice = unitPrice * quantity
+
+
+================================================================================
+                    6. ENVÍO A COCINA
+================================================================================
+
+FLUJO TÉCNICO
+-------------
+
+1. Usuario presiona "Enviar a Cocina"
+
+2. Frontend:
+   - Validar que hay items en el carrito
+   - Cambiar orderSent = true
+   - Mostrar toast de confirmación
+
+3. Backend (pendiente implementación):
+   - Crear/actualizar orden en table_sessions
+   - Crear order_items con detalles
+   - Crear order_item_modifiers
+   - Cambiar status de orden a "sent"
+   - Crear print_job para impresora de cocina
+
+4. Cocina:
+   - Recibe comanda impresa
+   - Puede ver en pantalla de cocina (KDS)
+
+DATOS DE COMANDA
+----------------
+- Número de mesa
+- Hora del pedido
+- Lista de items:
+  * Cantidad
+  * Nombre del producto
+  * Modificadores
+  * Notas especiales
+- Mesero/cajero que envió
+
+
+================================================================================
+                    7. DIVISIÓN DE CUENTA (SPLIT BILL)
+================================================================================
+
+Ubicación: SplitBillModal.tsx
+
+MODOS DE DIVISIÓN
+-----------------
+
+A) División Manual:
+   - Crear subcuentas con nombres personalizados
+   - Arrastrar/asignar items a cada subcuenta
+   - Items no asignados quedan en "Productos disponibles"
+
+B) División Equitativa:
+   - Especificar número de personas
+   - Sistema divide el total entre todos
+   - Cada subcuenta tiene el mismo monto
+
+ESTRUCTURA DE SUBCUENTA (SubAccount)
+------------------------------------
+- id: Identificador único
+- name: Nombre de la subcuenta (ej: "Juan", "Cuenta 1")
+- items: CartItem[] - Items asignados
+- subtotal: Suma de items
+- tax: ITBIS calculado
+- total: subtotal + tax
+- paid: Boolean si ya fue pagada
+
+FLUJO DE DIVISIÓN MANUAL
+------------------------
+1. Click en "Dividir Cuenta"
+2. Se abre SplitBillModal
+3. Crear nueva subcuenta (nombre)
+4. Seleccionar items de "Productos disponibles"
+5. Click "Asignar a [subcuenta]"
+6. Items se mueven a la subcuenta
+7. Repetir para otras subcuentas
+8. Confirmar división
+
+FLUJO DE DIVISIÓN EQUITATIVA
+----------------------------
+1. Click en "Dividir Cuenta"
+2. Click en "Dividir Equitativamente"
+3. Ingresar número de personas
+4. Sistema calcula monto por persona
+5. Crea subcuentas automáticamente
+6. Confirmar división
+
+ACCIONES EN SUBCUENTAS
+----------------------
+- Quitar item de subcuenta (vuelve a disponibles)
+- Eliminar subcuenta completa
+- Cambiar nombre de subcuenta
+
+
+================================================================================
+                    8. SISTEMA DE PAGOS
+================================================================================
+
+Ubicación: PaymentModal.tsx
+
+MÉTODOS DE PAGO SOPORTADOS
+--------------------------
+1. Efectivo (cash)
+   - Requiere monto recibido
+   - Calcula cambio automáticamente
+   - Botones de monto rápido
+
+2. Tarjeta (card)
+   - No requiere monto (cobra exacto)
+   - Opción de referencia
+
+3. Transferencia (transfer)
+   - No requiere monto (cobra exacto)
+   - Campo de referencia
+
+FLUJO DE PAGO
+-------------
+1. Click en "Pagar" en el carrito
+2. Se abre PaymentModal
+3. Seleccionar método de pago
+4. Si es efectivo:
+   - Ingresar monto recibido (numpad o botones rápidos)
+   - Ver cambio calculado
+5. Click "Confirmar Pago"
+6. Procesar pago
+7. Mostrar confirmación
+8. Cerrar mesa/orden
+
+INTERFAZ DEL MODAL
+------------------
+Layout de dos columnas:
+
+Columna izquierda:
+- Tabs de método de pago (Efectivo/Tarjeta/Transferencia)
+- Para efectivo:
+  * Botones de monto rápido (Exacto, +100, +500, +1000)
+  * Numpad virtual
+  * Display de monto ingresado
+
+Columna derecha:
+- Resumen de pago:
+  * Total a pagar
+  * Monto recibido (si aplica)
+  * Cambio a devolver (si aplica)
+- Botón "Confirmar Pago"
+- Botón "Cancelar"
+
+VALIDACIONES
+------------
+- Efectivo: monto recibido >= total
+- Tarjeta/Transferencia: siempre válido
+- No permitir pago si carrito vacío
+
+POST-PAGO (Backend)
+-------------------
+1. Crear registro en payments
+2. Actualizar status de orden a "paid"
+3. Si aplica: Generar documento fiscal (NCF)
+4. Cerrar table_session
+5. Actualizar estado de mesa a "disponible"
+6. Crear print_job para recibo
+7. Registrar en cash_transactions
+
+
+================================================================================
+                    9. COMPONENTES DEL SISTEMA
+================================================================================
+
+PÁGINAS
+-------
+/ventas (Ventas.tsx)
+- Layout principal de ventas
+- Contiene VentasSidebar y TablesGrid
+
+COMPONENTES PRINCIPALES
+-----------------------
+
+VentasSidebar.tsx
+- Navegación lateral
+- Botón Venta Rápida
+- Filtros de zona
+- Accesos rápidos
+
+TablesGrid.tsx
+- Grid de mesas por zona
+- Tabs de zonas
+- Contador de disponibles/ocupados
+- Maneja selección de mesa
+
+TableCard.tsx
+- Tarjeta visual de mesa individual
+- Muestra código, estado, comensales, tiempo, total
+- Click handler para seleccionar
+
+OrderScreen.tsx
+- Pantalla principal de toma de orden
+- Orquesta carrito y catálogo
+- Maneja modales de personalización, pago, división
+
+ProductCatalog.tsx
+- Catálogo de productos
+- Búsqueda y filtros
+- Grid de productos
+
+Cart.tsx
+- Sidebar de carrito
+- Lista de items
+- Totales
+- Acciones (enviar, dividir, pagar)
+
+MODALES
+-------
+
+ProductCustomizationModal.tsx
+- Personalización de producto
+- Modificadores
+- Notas
+- Cantidad
+
+PaymentModal.tsx
+- Selección de método de pago
+- Ingreso de montos
+- Confirmación
+
+SplitBillModal.tsx
+- División de cuenta
+- Gestión de subcuentas
+- División equitativa
+
+
+================================================================================
+                    10. TIPOS Y ESTRUCTURAS DE DATOS
+================================================================================
+
+Ubicación: src/types/pos.ts
+
+PRODUCT
+-------
+{
+  id: string
+  name: string
+  price: number
+  image?: string
+  categoryId: string
+  hasModifiers: boolean
+  modifierGroups?: ModifierGroup[]
+}
+
+MODIFIER_GROUP
+--------------
+{
+  id: string
+  name: string
+  required: boolean
+  minSelection: number
+  maxSelection: number
+  modifiers: Modifier[]
+}
+
+MODIFIER
+--------
+{
+  id: string
+  name: string
+  price: number
+}
+
+CART_ITEM
+---------
+{
+  id: string
+  productId: string
+  product: Product
+  quantity: number
+  selectedModifiers: SelectedModifier[]
+  notes: string
+  unitPrice: number
+  totalPrice: number
+}
+
+SELECTED_MODIFIER
+-----------------
+{
+  groupId: string
+  groupName: string
+  modifierId: string
+  modifierName: string
+  price: number
+}
+
+TABLE
+-----
+{
+  id: string
+  code: string
+  status: "disponible" | "ocupado" | "pagando"
+  guests?: number
+  time?: string
+  total?: number
+  zone: string
+  orderId?: string
+}
+
+ORDER
+-----
+{
+  id: string
+  tableId?: string
+  tableCode?: string
+  items: CartItem[]
+  subtotal: number
+  tax: number
+  total: number
+  status: "pending" | "sent" | "paid"
+  createdAt: Date
+  customerId?: string
+  customerName?: string
+}
+
+SUB_ACCOUNT
+-----------
+{
+  id: string
+  name: string
+  items: CartItem[]
+  subtotal: number
+  tax: number
+  total: number
+  paid: boolean
+}
+
+PAYMENT_METHOD
+--------------
+"efectivo" | "tarjeta" | "transferencia"
+
+PAYMENT
+-------
+{
+  method: PaymentMethod
+  amount: number
+  reference?: string
+}
+
+
+================================================================================
+                    11. HOOKS PERSONALIZADOS
+================================================================================
+
+useCart (src/hooks/use-cart.ts)
+-------------------------------
+Propósito: Gestión del estado del carrito de compras
+
+Retorna:
+{
+  items: CartItem[]
+  addItem: (product, quantity, modifiers, notes) => void
+  updateItemQuantity: (itemId, quantity) => void
+  removeItem: (itemId) => void
+  clearCart: () => void
+  subtotal: number
+  tax: number
+  total: number
+  itemCount: number
+}
+
+useMobile (src/hooks/use-mobile.tsx)
+------------------------------------
+Propósito: Detectar si el dispositivo es móvil
+
+Retorna:
+{
+  isMobile: boolean
+}
+
+useToast (src/hooks/use-toast.ts)
+---------------------------------
+Propósito: Mostrar notificaciones toast
+
+Retorna:
+{
+  toast: (options) => void
+  toasts: Toast[]
+  dismiss: (id) => void
+}
+
+
+================================================================================
+                    12. ESTADOS Y TRANSICIONES
+================================================================================
+
+ESTADOS DE MESA (Table.status)
+------------------------------
+disponible → ocupado (al seleccionar y agregar items)
+ocupado → pagando (al iniciar proceso de pago)
+pagando → disponible (al completar pago)
+ocupado → disponible (al cancelar orden)
+
+ESTADOS DE ORDEN (Order.status)
+-------------------------------
+pending → sent (al enviar a cocina)
+sent → paid (al completar pago)
+pending → paid (venta rápida, pago directo)
+* → canceled (al cancelar)
+
+ESTADOS DE ITEM (OrderItem.status - Backend)
+--------------------------------------------
+draft → queued (al enviar a cocina)
+queued → preparing (cocina inicia preparación)
+preparing → ready (producto listo)
+ready → served (entregado al cliente)
+
+FLUJO DE SESIÓN DE MESA
+-----------------------
+1. Mesa disponible
+2. Usuario selecciona mesa → Crea table_session
+3. Agrega productos → Crea/actualiza order
+4. Envía a cocina → order.status = "sent"
+5. Paga → order.status = "paid", cierra session
+6. Mesa vuelve a disponible
+
+
+================================================================================
+                    NOTAS DE IMPLEMENTACIÓN
+================================================================================
+
+PENDIENTES DE BACKEND
+---------------------
+- [ ] Integración con Supabase para persistencia
+- [ ] Sincronización en tiempo real (subscriptions)
+- [ ] Sistema de impresión (ESC/POS)
+- [ ] Generación de NCF/e-CF
+- [ ] Gestión de inventario al vender
+- [ ] Reportes y estadísticas
+
+CONSIDERACIONES DE UX
+---------------------
+- Feedback visual inmediato en todas las acciones
+- Confirmaciones para acciones destructivas
+- Manejo de errores con mensajes claros
+- Soporte para pantalla táctil
+- Atajos de teclado para acciones frecuentes
+
+SEGURIDAD
+---------
+- Validar permisos de usuario por acción
+- Registrar todas las transacciones
+- Proteger rutas sensibles
+- Cifrar datos de pago
+
+================================================================================
+                         FIN DEL DOCUMENTO
+================================================================================
