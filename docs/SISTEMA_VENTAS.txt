@@ -2646,11 +2646,580 @@ supabase
 
 ================================================================================
 ================================================================================
+                     PARTE XV - ESQUEMA DE BASE DE DATOS
+================================================================================
+================================================================================
+
+
+================================================================================
+15.1 MODELO ENTIDAD-RELACIÓN
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        DIAGRAMA DE RELACIONES                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌────────────────┐        ┌─────────────────┐        ┌──────────────────┐ │
+│  │   businesses   │───────>│  branch_codes   │<───────│     users        │ │
+│  │  (Negocios)    │  1:N   │   (Sucursales)  │   N:1  │   (Usuarios)     │ │
+│  └────────────────┘        └─────────────────┘        └──────────────────┘ │
+│          │                         │                          │            │
+│          │                         │                          │            │
+│          v                         v                          │            │
+│  ┌────────────────┐        ┌─────────────────┐               │            │
+│  │ dining_zones   │───────>│ dining_tables   │               │            │
+│  │  (Zonas)       │  1:N   │   (Mesas)       │               │            │
+│  └────────────────┘        └─────────────────┘               │            │
+│                                    │                          │            │
+│                                    │ 1:N                      │            │
+│                                    v                          │            │
+│                           ┌─────────────────┐                 │            │
+│                           │ table_sessions  │<────────────────┘            │
+│                           │ (Sesiones Mesa) │     opened_by                │
+│                           └─────────────────┘                              │
+│                                    │                                       │
+│                                    │ 1:N                                   │
+│                                    v                                       │
+│                           ┌─────────────────┐                              │
+│                           │    orders       │                              │
+│                           │   (Órdenes)     │                              │
+│                           └─────────────────┘                              │
+│                                    │                                       │
+│                    ┌───────────────┼───────────────┐                       │
+│                    │ 1:N           │ 1:N           │ 1:N                   │
+│                    v               v               v                       │
+│           ┌──────────────┐ ┌─────────────┐ ┌───────────────┐              │
+│           │ order_items  │ │order_checks │ │   payments    │              │
+│           │ (Items)      │ │(Subcuentas) │ │   (Pagos)     │              │
+│           └──────────────┘ └─────────────┘ └───────────────┘              │
+│                    │                               │                       │
+│                    │ 1:N                           │ 1:1                   │
+│                    v                               v                       │
+│          ┌───────────────────┐           ┌──────────────────┐             │
+│          │order_item_modifiers│           │fiscal_documents  │             │
+│          │  (Modificadores)   │           │ (NCF/Facturas)   │             │
+│          └───────────────────┘           └──────────────────┘             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+15.2 TABLAS PRINCIPALES - DEFINICIONES SQL
+================================================================================
+
+-- ============================================================================
+-- TABLA: businesses (Negocios/Empresas)
+-- ============================================================================
+CREATE TABLE public.businesses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  rnc TEXT UNIQUE,                          -- RNC para facturación (RD)
+  trade_name TEXT,                          -- Nombre comercial
+  address TEXT,
+  phone TEXT,
+  email TEXT,
+  logo_url TEXT,
+  default_tax_rate DECIMAL(5,4) DEFAULT 0.18,  -- ITBIS 18%
+  currency_code TEXT DEFAULT 'DOP',
+  timezone TEXT DEFAULT 'America/Santo_Domingo',
+  settings JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ============================================================================
+-- TABLA: branch_codes (Sucursales)
+-- ============================================================================
+CREATE TABLE public.branch_codes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  code TEXT NOT NULL,                        -- Código único por sucursal
+  name TEXT NOT NULL,
+  address TEXT,
+  phone TEXT,
+  is_active BOOLEAN DEFAULT true,
+  settings JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(business_id, code)
+);
+
+-- ============================================================================
+-- TABLA: users (Usuarios del Sistema)
+-- ============================================================================
+CREATE TABLE public.users (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  business_id UUID REFERENCES businesses(id),
+  branch_id UUID REFERENCES branch_codes(id),
+  full_name TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('admin', 'manager', 'cashier', 'waiter', 'kitchen')),
+  pin_code TEXT,                            -- PIN para acceso rápido
+  is_active BOOLEAN DEFAULT true,
+  avatar_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ============================================================================
+-- TABLA: categories (Categorías de Productos)
+-- ============================================================================
+CREATE TABLE public.categories (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  icon TEXT,
+  color TEXT,
+  sort_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ============================================================================
+-- TABLA: products (Productos)
+-- ============================================================================
+CREATE TABLE public.products (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
+  sku TEXT,
+  name TEXT NOT NULL,
+  description TEXT,
+  price DECIMAL(12,2) NOT NULL DEFAULT 0,
+  cost DECIMAL(12,2) DEFAULT 0,
+  image_url TEXT,
+  has_modifiers BOOLEAN DEFAULT false,
+  is_taxable BOOLEAN DEFAULT true,
+  is_active BOOLEAN DEFAULT true,
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ============================================================================
+-- TABLA: modifier_groups (Grupos de Modificadores)
+-- ============================================================================
+CREATE TABLE public.modifier_groups (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,                        -- "Tamaño", "Extras", etc.
+  is_required BOOLEAN DEFAULT false,
+  min_selection INTEGER DEFAULT 0,
+  max_selection INTEGER DEFAULT 1,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ============================================================================
+-- TABLA: modifiers (Modificadores/Opciones)
+-- ============================================================================
+CREATE TABLE public.modifiers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  group_id UUID NOT NULL REFERENCES modifier_groups(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  price DECIMAL(12,2) DEFAULT 0,
+  is_default BOOLEAN DEFAULT false,
+  sort_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true
+);
+
+-- ============================================================================
+-- TABLA: product_modifier_groups (Relación Productos-Grupos)
+-- ============================================================================
+CREATE TABLE public.product_modifier_groups (
+  product_id UUID REFERENCES products(id) ON DELETE CASCADE,
+  group_id UUID REFERENCES modifier_groups(id) ON DELETE CASCADE,
+  PRIMARY KEY (product_id, group_id)
+);
+
+-- ============================================================================
+-- TABLA: dining_zones (Zonas del Restaurante)
+-- ============================================================================
+CREATE TABLE public.dining_zones (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  branch_id UUID NOT NULL REFERENCES branch_codes(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,                        -- "Salón Principal", "Terraza"
+  description TEXT,
+  sort_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ============================================================================
+-- TABLA: dining_tables (Mesas)
+-- ============================================================================
+CREATE TABLE public.dining_tables (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  zone_id UUID NOT NULL REFERENCES dining_zones(id) ON DELETE CASCADE,
+  code TEXT NOT NULL,                        -- "A1", "T1", "VIP1"
+  capacity INTEGER DEFAULT 4,
+  state TEXT DEFAULT 'available' CHECK (state IN ('available', 'occupied', 'reserved', 'paying', 'maintenance')),
+  position_x INTEGER DEFAULT 0,              -- Para layout visual
+  position_y INTEGER DEFAULT 0,
+  shape TEXT DEFAULT 'square',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(zone_id, code)
+);
+
+-- ============================================================================
+-- TABLA: table_sessions (Sesiones de Mesa)
+-- ============================================================================
+CREATE TABLE public.table_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  table_id UUID NOT NULL REFERENCES dining_tables(id),
+  opened_by UUID REFERENCES users(id),
+  customer_id UUID,                          -- Cliente asociado (opcional)
+  customer_name TEXT,
+  people_count INTEGER DEFAULT 1,
+  origin TEXT DEFAULT 'dine_in' CHECK (origin IN ('dine_in', 'takeout', 'delivery', 'self_service')),
+  opened_at TIMESTAMPTZ DEFAULT now(),
+  closed_at TIMESTAMPTZ,
+  notes TEXT
+);
+
+-- ============================================================================
+-- TABLA: orders (Órdenes/Pedidos)
+-- ============================================================================
+CREATE TABLE public.orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id UUID NOT NULL REFERENCES businesses(id),
+  branch_id UUID REFERENCES branch_codes(id),
+  session_id UUID REFERENCES table_sessions(id),
+  order_number SERIAL,                       -- Número secuencial del día
+  status_ext TEXT DEFAULT 'open' CHECK (status_ext IN ('open', 'sent', 'preparing', 'ready', 'delivered', 'paid', 'cancelled', 'voided')),
+  subtotal DECIMAL(12,2) DEFAULT 0,
+  tax_amount DECIMAL(12,2) DEFAULT 0,
+  discount_amount DECIMAL(12,2) DEFAULT 0,
+  total DECIMAL(12,2) DEFAULT 0,
+  notes TEXT,
+  created_by UUID REFERENCES users(id),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  sent_at TIMESTAMPTZ,
+  closed_at TIMESTAMPTZ
+);
+
+-- ============================================================================
+-- TABLA: order_items (Items de la Orden)
+-- ============================================================================
+CREATE TABLE public.order_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  check_id UUID REFERENCES order_checks(id) ON DELETE SET NULL,  -- Para división
+  product_id UUID REFERENCES products(id),
+  product_name TEXT NOT NULL,                -- Snapshot del nombre
+  qty INTEGER NOT NULL DEFAULT 1,
+  unit_price DECIMAL(12,2) NOT NULL,
+  modifier_total DECIMAL(12,2) DEFAULT 0,
+  subtotal DECIMAL(12,2) NOT NULL,
+  notes TEXT,
+  status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'queued', 'preparing', 'ready', 'delivered', 'voided')),
+  printed BOOLEAN DEFAULT false,
+  kitchen_id UUID,                           -- A qué cocina se envía
+  created_at TIMESTAMPTZ DEFAULT now(),
+  sent_at TIMESTAMPTZ
+);
+
+-- ============================================================================
+-- TABLA: order_item_modifiers (Modificadores Seleccionados)
+-- ============================================================================
+CREATE TABLE public.order_item_modifiers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  item_id UUID NOT NULL REFERENCES order_items(id) ON DELETE CASCADE,
+  modifier_id UUID REFERENCES modifiers(id),
+  name TEXT NOT NULL,                        -- Snapshot del nombre
+  qty INTEGER DEFAULT 1,
+  price DECIMAL(12,2) DEFAULT 0
+);
+
+-- ============================================================================
+-- TABLA: order_checks (Subcuentas/División)
+-- ============================================================================
+CREATE TABLE public.order_checks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  label TEXT NOT NULL,                       -- "C1", "C2", etc.
+  position INTEGER DEFAULT 1,
+  customer_id UUID,
+  subtotal DECIMAL(12,2) DEFAULT 0,
+  tax DECIMAL(12,2) DEFAULT 0,
+  discount DECIMAL(12,2) DEFAULT 0,
+  total DECIMAL(12,2) DEFAULT 0,
+  is_paid BOOLEAN DEFAULT false,
+  paid_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ============================================================================
+-- TABLA: payment_methods (Métodos de Pago)
+-- ============================================================================
+CREATE TABLE public.payment_methods (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,                        -- "Efectivo", "Tarjeta Visa", etc.
+  type TEXT NOT NULL CHECK (type IN ('cash', 'card', 'transfer', 'credit', 'other')),
+  is_active BOOLEAN DEFAULT true,
+  requires_reference BOOLEAN DEFAULT false,
+  opens_drawer BOOLEAN DEFAULT false,
+  sort_order INTEGER DEFAULT 0
+);
+
+-- ============================================================================
+-- TABLA: payments (Pagos)
+-- ============================================================================
+CREATE TABLE public.payments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id UUID NOT NULL REFERENCES businesses(id),
+  order_id UUID NOT NULL REFERENCES orders(id),
+  check_id UUID REFERENCES order_checks(id), -- Subcuenta pagada (si aplica)
+  payment_method_id UUID REFERENCES payment_methods(id),
+  amount DECIMAL(12,2) NOT NULL,
+  tendered DECIMAL(12,2),                    -- Monto recibido (efectivo)
+  change_amount DECIMAL(12,2) DEFAULT 0,
+  reference TEXT,                            -- Ref. tarjeta/transferencia
+  tip_amount DECIMAL(12,2) DEFAULT 0,
+  status TEXT DEFAULT 'completed' CHECK (status IN ('pending', 'completed', 'refunded', 'voided')),
+  processed_by UUID REFERENCES users(id),
+  session_id UUID,                           -- Sesión de caja
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ============================================================================
+-- TABLA: ncf_sequences (Secuencias NCF - Comprobantes Fiscales RD)
+-- ============================================================================
+CREATE TABLE public.ncf_sequences (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  branch_id UUID REFERENCES branch_codes(id),
+  ncf_type TEXT NOT NULL,                    -- 'B01', 'B02', 'B14', 'B15', 'E31', etc.
+  prefix TEXT NOT NULL,                      -- 'B010010010100'
+  current_sequence INTEGER DEFAULT 0,
+  range_start INTEGER NOT NULL,
+  range_end INTEGER NOT NULL,
+  expiry_date DATE,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(branch_id, ncf_type)
+);
+
+-- ============================================================================
+-- TABLA: fiscal_documents (Documentos Fiscales)
+-- ============================================================================
+CREATE TABLE public.fiscal_documents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id UUID NOT NULL REFERENCES businesses(id),
+  payment_id UUID REFERENCES payments(id),
+  order_id UUID REFERENCES orders(id),
+  ncf_type TEXT NOT NULL,
+  ncf_number TEXT NOT NULL UNIQUE,           -- NCF completo generado
+  customer_rnc TEXT,                         -- RNC del cliente (si B01)
+  customer_name TEXT,
+  subtotal DECIMAL(12,2) NOT NULL,
+  tax_amount DECIMAL(12,2) NOT NULL,
+  total DECIMAL(12,2) NOT NULL,
+  items JSONB NOT NULL,                      -- Snapshot de items
+  status TEXT DEFAULT 'issued' CHECK (status IN ('issued', 'cancelled', 'nullified')),
+  issued_at TIMESTAMPTZ DEFAULT now(),
+  cancelled_at TIMESTAMPTZ,
+  cancellation_reason TEXT
+);
+
+-- ============================================================================
+-- TABLA: cash_register_sessions (Sesiones de Caja)
+-- ============================================================================
+CREATE TABLE public.cash_register_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  branch_id UUID NOT NULL REFERENCES branch_codes(id),
+  opened_by UUID REFERENCES users(id),
+  closed_by UUID REFERENCES users(id),
+  opening_amount DECIMAL(12,2) DEFAULT 0,
+  closing_amount DECIMAL(12,2),
+  expected_amount DECIMAL(12,2),
+  difference DECIMAL(12,2),
+  opened_at TIMESTAMPTZ DEFAULT now(),
+  closed_at TIMESTAMPTZ,
+  notes TEXT,
+  status TEXT DEFAULT 'open' CHECK (status IN ('open', 'closed'))
+);
+
+-- ============================================================================
+-- TABLA: cash_transactions (Movimientos de Caja)
+-- ============================================================================
+CREATE TABLE public.cash_transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id UUID NOT NULL REFERENCES cash_register_sessions(id),
+  type TEXT NOT NULL CHECK (type IN ('opening', 'sale', 'refund', 'expense', 'deposit', 'withdrawal')),
+  amount DECIMAL(12,2) NOT NULL,
+  related_order_id UUID REFERENCES orders(id),
+  description TEXT,
+  created_by UUID REFERENCES users(id),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ============================================================================
+-- TABLA: kitchens (Cocinas/Estaciones)
+-- ============================================================================
+CREATE TABLE public.kitchens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  branch_id UUID NOT NULL REFERENCES branch_codes(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,                        -- "Cocina Caliente", "Barra", etc.
+  printer_id UUID,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ============================================================================
+-- TABLA: printers (Impresoras)
+-- ============================================================================
+CREATE TABLE public.printers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  branch_id UUID NOT NULL REFERENCES branch_codes(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('window', 'usb', 'network')),
+  ip_address TEXT,
+  port INTEGER DEFAULT 9100,
+  paper_width TEXT DEFAULT '80mm',
+  auto_cut BOOLEAN DEFAULT true,
+  open_drawer BOOLEAN DEFAULT false,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ============================================================================
+-- TABLA: print_jobs (Cola de Impresión)
+-- ============================================================================
+CREATE TABLE public.print_jobs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id UUID NOT NULL REFERENCES businesses(id),
+  printer_id UUID REFERENCES printers(id),
+  job_type TEXT NOT NULL CHECK (job_type IN ('command', 'receipt', 'prebill', 'report')),
+  data_hex TEXT NOT NULL,                    -- Comandos ESC/POS en hex
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'printing', 'completed', 'failed')),
+  error_message TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  printed_at TIMESTAMPTZ
+);
+
+
+================================================================================
+15.3 FUNCIONES HELPER PARA RLS
+================================================================================
+
+-- Función: Verificar acceso a negocio
+CREATE OR REPLACE FUNCTION user_has_business_access(business_uuid UUID)
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM users
+    WHERE id = auth.uid()
+    AND business_id = business_uuid
+    AND is_active = true
+  );
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+-- Función: Obtener rol del usuario en negocio
+CREATE OR REPLACE FUNCTION user_business_role(business_uuid UUID)
+RETURNS TEXT AS $$
+  SELECT role FROM users
+  WHERE id = auth.uid()
+  AND business_id = business_uuid
+  LIMIT 1;
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+-- Función: Generar siguiente NCF
+CREATE OR REPLACE FUNCTION generate_next_ncf(
+  p_business_id UUID,
+  p_branch_id UUID,
+  p_ncf_type TEXT
+)
+RETURNS TEXT AS $$
+DECLARE
+  v_sequence ncf_sequences%ROWTYPE;
+  v_next_number INTEGER;
+  v_ncf TEXT;
+BEGIN
+  SELECT * INTO v_sequence
+  FROM ncf_sequences
+  WHERE business_id = p_business_id
+    AND branch_id = p_branch_id
+    AND ncf_type = p_ncf_type
+    AND is_active = true
+    AND (expiry_date IS NULL OR expiry_date >= CURRENT_DATE)
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'No hay secuencia NCF disponible para tipo %', p_ncf_type;
+  END IF;
+
+  v_next_number := v_sequence.current_sequence + 1;
+
+  IF v_next_number > v_sequence.range_end THEN
+    RAISE EXCEPTION 'Secuencia NCF agotada para tipo %', p_ncf_type;
+  END IF;
+
+  UPDATE ncf_sequences
+  SET current_sequence = v_next_number
+  WHERE id = v_sequence.id;
+
+  v_ncf := v_sequence.prefix || LPAD(v_next_number::TEXT, 8, '0');
+
+  RETURN v_ncf;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
+================================================================================
+15.4 POLÍTICAS RLS RECOMENDADAS
+================================================================================
+
+-- Habilitar RLS en todas las tablas
+ALTER TABLE businesses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
+-- ... (aplicar a todas las tablas)
+
+-- Ejemplo: Política para órdenes
+CREATE POLICY "Users can view orders of their business"
+ON orders FOR SELECT
+USING (user_has_business_access(business_id));
+
+CREATE POLICY "Users can insert orders in their business"
+ON orders FOR INSERT
+WITH CHECK (user_has_business_access(business_id));
+
+CREATE POLICY "Users can update orders in their business"
+ON orders FOR UPDATE
+USING (user_has_business_access(business_id));
+
+
+================================================================================
+15.5 ÍNDICES RECOMENDADOS
+================================================================================
+
+-- Índices para búsquedas frecuentes
+CREATE INDEX idx_orders_business_date ON orders(business_id, created_at DESC);
+CREATE INDEX idx_orders_session ON orders(session_id);
+CREATE INDEX idx_order_items_order ON order_items(order_id);
+CREATE INDEX idx_order_items_status ON order_items(status);
+CREATE INDEX idx_payments_order ON payments(order_id);
+CREATE INDEX idx_table_sessions_table ON table_sessions(table_id, closed_at);
+CREATE INDEX idx_dining_tables_zone_state ON dining_tables(zone_id, state);
+CREATE INDEX idx_products_category ON products(category_id, is_active);
+CREATE INDEX idx_fiscal_docs_ncf ON fiscal_documents(ncf_number);
+
+
+================================================================================
+================================================================================
                           FIN DEL DOCUMENTO
 ================================================================================
 ================================================================================
 
 HISTORIAL DE VERSIONES:
+
+v2.1 (2026-01-20)
+- Añadida Parte XV: Esquema completo de base de datos
+- Definiciones SQL para todas las tablas
+- Funciones helper para RLS
+- Políticas de seguridad recomendadas
+- Índices de rendimiento
 
 v2.0 (2026-01-11)
 - Documentación completamente reescrita
