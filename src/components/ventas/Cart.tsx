@@ -1,4 +1,4 @@
-import { Minus, Plus, Trash2, X, ChefHat, CreditCard, Split } from "lucide-react";
+import { Minus, Plus, Trash2, X, ChefHat, CreditCard, Split, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CartItem } from "@/types/pos";
@@ -15,6 +15,7 @@ interface CartProps {
   onSendToKitchen: () => void;
   onSplitBill: () => void;
   onPay: () => void;
+  onPreBill?: () => void;
   orderSent?: boolean;
 }
 
@@ -30,6 +31,7 @@ export function Cart({
   onSendToKitchen,
   onSplitBill,
   onPay,
+  onPreBill,
   orderSent = false,
 }: CartProps) {
   const formatCurrency = (amount: number) =>
@@ -186,21 +188,30 @@ export function Cart({
           )}
 
           {tableCode && orderSent && (
-            <Button
-              variant="outline"
-              className="w-full"
-              size="lg"
-              onClick={onSplitBill}
-              disabled={items.length === 0}
-            >
-              <Split className="w-5 h-5 mr-2" />
-              Dividir Cuenta
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={onPreBill}
+                disabled={items.length === 0}
+              >
+                <FileText className="w-5 h-5 mr-2" />
+                Pre-Cuenta
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={onSplitBill}
+                disabled={items.length === 0}
+              >
+                <Split className="w-5 h-5 mr-2" />
+                Dividir
+              </Button>
+            </div>
           )}
 
           <Button
-            className={`w-full ${!tableCode ? "bg-primary hover:bg-primary/90" : ""}`}
-            variant={tableCode ? "default" : "default"}
+            className="w-full bg-success hover:bg-success/90"
             size="lg"
             onClick={onPay}
             disabled={items.length === 0}
