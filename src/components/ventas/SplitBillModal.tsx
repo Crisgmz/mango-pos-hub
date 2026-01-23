@@ -153,23 +153,36 @@ export function SplitBillModal({
   const splitEqually = () => {
     if (equalSplitCount < 2) return;
 
-    const perPersonSubtotal = Math.floor(subtotal / equalSplitCount);
-    const perPersonTax = Math.round(perPersonSubtotal * TAX_RATE);
-    const perPersonTotal = perPersonSubtotal + perPersonTax;
-
-    const remainder = subtotal - perPersonSubtotal * equalSplitCount;
-
+    // Create fractional items for each subaccount
     const newSubAccounts: SubAccount[] = Array.from(
       { length: equalSplitCount },
-      (_, i) => ({
-        id: `sub-${Date.now()}-${i}`,
-        name: `C${i + 1}`,
-        items: [],
-        subtotal: perPersonSubtotal + (i === 0 ? remainder : 0),
-        tax: perPersonTax + (i === 0 ? Math.round(remainder * TAX_RATE) : 0),
-        total: perPersonTotal + (i === 0 ? remainder + Math.round(remainder * TAX_RATE) : 0),
-        paid: false,
-      })
+      (_, i) => {
+        // Create fractional items - divide quantity by number of people
+        const fractionalItems: CartItem[] = items.map((item) => {
+          const fractionalQuantity = item.quantity / equalSplitCount;
+          const fractionalTotalPrice = item.totalPrice / equalSplitCount;
+          
+          return {
+            ...item,
+            id: `${item.id}-split-${i}`,
+            quantity: fractionalQuantity,
+            totalPrice: fractionalTotalPrice,
+          };
+        });
+
+        const subAccountSubtotal = fractionalItems.reduce((sum, item) => sum + item.totalPrice, 0);
+        const subAccountTax = Math.round(subAccountSubtotal * TAX_RATE);
+
+        return {
+          id: `sub-${Date.now()}-${i}`,
+          name: `C${i + 1}`,
+          items: fractionalItems,
+          subtotal: subAccountSubtotal,
+          tax: subAccountTax,
+          total: subAccountSubtotal + subAccountTax,
+          paid: false,
+        };
+      }
     );
 
     setSubAccounts(newSubAccounts);
@@ -312,7 +325,7 @@ export function SplitBillModal({
                       )}
                     >
                       <span className="text-lg font-semibold text-foreground">
-                        {item.quantity}
+                        {Number.isInteger(item.quantity) ? item.quantity : item.quantity.toFixed(2)}
                       </span>
                       <div className="flex items-center gap-2">
                         <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-orange-100 text-orange-500 text-xs font-bold">
@@ -474,7 +487,11 @@ export function SplitBillModal({
                               key={item.id}
                               className="px-4 py-2 grid grid-cols-[60px_1fr_100px_50px] items-center"
                             >
-                              <span className="font-medium">{item.quantity}</span>
+                              <span className="font-medium">
+                                {Number.isInteger(item.quantity) 
+                                  ? item.quantity 
+                                  : item.quantity.toFixed(2)}
+                              </span>
                               <span className="text-sm">
                                 {item.product.name}
                                 {item.selectedModifiers.length > 0 && (
