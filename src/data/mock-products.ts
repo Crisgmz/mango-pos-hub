@@ -17,6 +17,7 @@ export const products: Product[] = [
     price: 75,
     categoryId: "bebidas",
     hasModifiers: true,
+    defaultNotes: ["Sin hielo", "Poco hielo", "Extra fría", "Con limón"],
     modifierGroups: [
       {
         id: "tamano",
@@ -183,6 +184,7 @@ export const products: Product[] = [
     price: 350,
     categoryId: "platos-fuertes",
     hasModifiers: true,
+    defaultNotes: ["Sin ensalada", "Arroz aparte", "Poca sal", "Sin aguacate", "Doble carne"],
     modifierGroups: [
       {
         id: "carne",
@@ -204,6 +206,7 @@ export const products: Product[] = [
     price: 450,
     categoryId: "platos-fuertes",
     hasModifiers: true,
+    defaultNotes: ["Bien majado", "Poco ajo", "Sin cebolla", "Salsa aparte", "Extra crujiente"],
     modifierGroups: [
       {
         id: "relleno",
@@ -233,6 +236,7 @@ export const products: Product[] = [
     price: 650,
     categoryId: "platos-fuertes",
     hasModifiers: true,
+    defaultNotes: ["Sin chimichurri", "Poca sal", "Corte mariposa", "Sin grasa", "Bien dorado"],
     modifierGroups: [
       {
         id: "termino",

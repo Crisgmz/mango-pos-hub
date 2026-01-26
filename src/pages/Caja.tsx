@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { 
   DollarSign, 
@@ -12,37 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-
-const cajaModules = [
-  { 
-    icon: DollarSign, 
-    title: "Apertura de Caja", 
-    description: "Iniciar turno con monto inicial",
-    color: "bg-success/10 text-success",
-    action: "Aperturar"
-  },
-  { 
-    icon: Lock, 
-    title: "Cierre de Caja", 
-    description: "Finalizar turno y cuadrar",
-    color: "bg-destructive/10 text-destructive",
-    action: "Cerrar"
-  },
-  { 
-    icon: History, 
-    title: "Historial de Caja", 
-    description: "Ver movimientos anteriores",
-    color: "bg-info/10 text-info",
-    action: "Ver"
-  },
-  { 
-    icon: ClipboardList, 
-    title: "Gestión de Cierres", 
-    description: "Revisar y aprobar cierres",
-    color: "bg-warning/10 text-warning",
-    action: "Gestionar"
-  },
-];
+import { BlindCashCloseModal } from "@/components/caja/BlindCashCloseModal";
 
 const movements = [
   { type: "ingreso", concept: "Venta Mesa SP02", amount: 2850, time: "14:32" },
@@ -53,6 +24,24 @@ const movements = [
 ];
 
 const Caja = () => {
+  const [showBlindClose, setShowBlindClose] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Mock data for cash register
+  const mockExpectedCash = 28500;
+  const mockExpectedCard = 12500;
+  const mockExpectedTransfer = 4200;
+  const mockTotalSales = 45200;
+  const mockTransactionCount = 28;
+
+  const handleOpenRegister = () => {
+    setIsOpen(true);
+  };
+
+  const handleCloseRegister = () => {
+    setShowBlindClose(true);
+  };
+
   return (
     <MainLayout>
       <div className="p-6 space-y-6 animate-fade-in">
@@ -75,16 +64,30 @@ const Caja = () => {
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-3 h-3 rounded-full bg-warning animate-pulse" />
-                <span className="text-sm font-medium text-warning">Caja Cerrada</span>
+                <div className={`w-3 h-3 rounded-full ${isOpen ? 'bg-success' : 'bg-warning'} animate-pulse`} />
+                <span className={`text-sm font-medium ${isOpen ? 'text-success' : 'text-warning'}`}>
+                  {isOpen ? 'Caja Abierta' : 'Caja Cerrada'}
+                </span>
               </div>
               <h2 className="text-2xl font-bold text-foreground">Caja #001</h2>
-              <p className="text-muted-foreground">Último cierre: Ayer, 11:45 PM</p>
+              <p className="text-muted-foreground">
+                {isOpen ? 'Turno iniciado: Hoy, 8:00 AM' : 'Último cierre: Ayer, 11:45 PM'}
+              </p>
             </div>
-            <Button className="btn-mango">
-              <DollarSign className="w-4 h-4 mr-2" />
-              Aperturar Caja
-            </Button>
+            {!isOpen ? (
+              <Button className="btn-mango" onClick={handleOpenRegister}>
+                <DollarSign className="w-4 h-4 mr-2" />
+                Aperturar Caja
+              </Button>
+            ) : (
+              <Button 
+                variant="destructive" 
+                onClick={handleCloseRegister}
+              >
+                <Lock className="w-4 h-4 mr-2" />
+                Cerrar Caja
+              </Button>
+            )}
           </div>
         </div>
 
@@ -130,21 +133,58 @@ const Caja = () => {
 
         {/* Modules Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {cajaModules.map((module) => {
-            const Icon = module.icon;
-            return (
-              <div key={module.title} className="card-interactive p-5">
-                <div className={`w-12 h-12 rounded-xl ${module.color} flex items-center justify-center mb-4`}>
-                  <Icon className="w-6 h-6" />
-                </div>
-                <h3 className="font-semibold text-foreground mb-1">{module.title}</h3>
-                <p className="text-sm text-muted-foreground mb-4">{module.description}</p>
-                <Button variant="outline" size="sm" className="w-full">
-                  {module.action}
-                </Button>
-              </div>
-            );
-          })}
+          <div className="card-interactive p-5">
+            <div className="w-12 h-12 rounded-xl bg-success/10 text-success flex items-center justify-center mb-4">
+              <DollarSign className="w-6 h-6" />
+            </div>
+            <h3 className="font-semibold text-foreground mb-1">Apertura de Caja</h3>
+            <p className="text-sm text-muted-foreground mb-4">Iniciar turno con monto inicial</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full"
+              onClick={handleOpenRegister}
+              disabled={isOpen}
+            >
+              Aperturar
+            </Button>
+          </div>
+          <div className="card-interactive p-5">
+            <div className="w-12 h-12 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center mb-4">
+              <Lock className="w-6 h-6" />
+            </div>
+            <h3 className="font-semibold text-foreground mb-1">Cierre de Caja</h3>
+            <p className="text-sm text-muted-foreground mb-4">Cierre a ciegas y cuadrar</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full"
+              onClick={handleCloseRegister}
+              disabled={!isOpen}
+            >
+              Cerrar
+            </Button>
+          </div>
+          <div className="card-interactive p-5">
+            <div className="w-12 h-12 rounded-xl bg-info/10 text-info flex items-center justify-center mb-4">
+              <History className="w-6 h-6" />
+            </div>
+            <h3 className="font-semibold text-foreground mb-1">Historial de Caja</h3>
+            <p className="text-sm text-muted-foreground mb-4">Ver movimientos anteriores</p>
+            <Button variant="outline" size="sm" className="w-full">
+              Ver
+            </Button>
+          </div>
+          <div className="card-interactive p-5">
+            <div className="w-12 h-12 rounded-xl bg-warning/10 text-warning flex items-center justify-center mb-4">
+              <ClipboardList className="w-6 h-6" />
+            </div>
+            <h3 className="font-semibold text-foreground mb-1">Gestión de Cierres</h3>
+            <p className="text-sm text-muted-foreground mb-4">Revisar y aprobar cierres</p>
+            <Button variant="outline" size="sm" className="w-full">
+              Gestionar
+            </Button>
+          </div>
         </div>
 
         {/* Recent Movements */}
@@ -194,6 +234,17 @@ const Caja = () => {
           </div>
         </div>
       </div>
+
+      {/* Blind Cash Close Modal */}
+      <BlindCashCloseModal
+        open={showBlindClose}
+        onClose={() => setShowBlindClose(false)}
+        expectedCash={mockExpectedCash}
+        expectedCard={mockExpectedCard}
+        expectedTransfer={mockExpectedTransfer}
+        totalSales={mockTotalSales}
+        transactionCount={mockTransactionCount}
+      />
     </MainLayout>
   );
 };

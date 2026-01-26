@@ -47,6 +47,10 @@ export function PaymentModal({
   const numericAmount = parseInt(amountReceived) || 0;
   const change = numericAmount - total;
 
+  // For card/transfer, track if this is a partial payment
+  const isPartialPayment = selectedMethod !== "efectivo" && numericAmount > 0 && numericAmount < total;
+  const remainingAmount = total - numericAmount;
+
   const handleNumpadClick = (value: string) => {
     if (value === "clear") {
       setAmountReceived("");
@@ -66,14 +70,17 @@ export function PaymentModal({
   };
 
   const handleConfirm = () => {
-    const finalAmount = selectedMethod === "efectivo" ? numericAmount : total;
+    const finalAmount = numericAmount > 0 ? numericAmount : total;
     onConfirmPayment(selectedMethod, finalAmount);
     setAmountReceived("");
     onClose();
   };
 
+  // Can pay if: cash with enough amount, or card/transfer with any amount entered or exact
   const canPay =
-    selectedMethod !== "efectivo" || numericAmount >= total;
+    selectedMethod === "efectivo"
+      ? numericAmount >= total
+      : numericAmount === 0 || numericAmount <= total;
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
@@ -99,7 +106,10 @@ export function PaymentModal({
                   return (
                     <button
                       key={method.id}
-                      onClick={() => setSelectedMethod(method.id)}
+                      onClick={() => {
+                        setSelectedMethod(method.id);
+                        setAmountReceived("");
+                      }}
                       className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
                         isSelected
                           ? "border-primary bg-primary/10 text-primary"
@@ -114,7 +124,7 @@ export function PaymentModal({
               </div>
             </div>
 
-            {/* Quick Amounts */}
+            {/* Quick Amounts - Only for Cash */}
             {selectedMethod === "efectivo" && (
               <div className="space-y-2">
                 <h4 className="font-medium text-muted-foreground text-sm">
@@ -146,51 +156,56 @@ export function PaymentModal({
               </div>
             )}
 
-            {/* Numpad */}
-            {selectedMethod === "efectivo" && (
-              <div className="space-y-2">
-                <div className="bg-secondary/50 rounded-xl p-4 text-right">
-                  <p className="text-sm text-muted-foreground">
-                    Monto recibido
+            {/* Numpad - Always visible now for partial payments */}
+            <div className="space-y-2">
+              <div className="bg-secondary/50 rounded-xl p-4 text-right">
+                <p className="text-sm text-muted-foreground">
+                  {selectedMethod === "efectivo"
+                    ? "Monto recibido"
+                    : "Monto a cobrar con " + (selectedMethod === "tarjeta" ? "tarjeta" : "transferencia")}
+                </p>
+                <p className="text-3xl font-bold text-foreground">
+                  {amountReceived
+                    ? formatCurrency(numericAmount)
+                    : formatCurrency(selectedMethod === "efectivo" ? 0 : total)}
+                </p>
+                {selectedMethod !== "efectivo" && numericAmount === 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ingresa monto para pago parcial o confirma el total
                   </p>
-                  <p className="text-3xl font-bold text-foreground">
-                    {amountReceived
-                      ? formatCurrency(numericAmount)
-                      : formatCurrency(0)}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((num) => (
-                    <Button
-                      key={num}
-                      variant="outline"
-                      size="lg"
-                      className="text-xl font-semibold h-14"
-                      onClick={() => handleNumpadClick(num.toString())}
-                    >
-                      {num}
-                    </Button>
-                  ))}
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="text-xl h-14"
-                    onClick={() => handleNumpadClick("00")}
-                  >
-                    00
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="h-14"
-                    onClick={() => handleNumpadClick("backspace")}
-                  >
-                    <Delete className="w-5 h-5" />
-                  </Button>
-                </div>
+                )}
               </div>
-            )}
+
+              <div className="grid grid-cols-3 gap-2">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((num) => (
+                  <Button
+                    key={num}
+                    variant="outline"
+                    size="lg"
+                    className="text-xl font-semibold h-14"
+                    onClick={() => handleNumpadClick(num.toString())}
+                  >
+                    {num}
+                  </Button>
+                ))}
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="text-xl h-14"
+                  onClick={() => handleNumpadClick("00")}
+                >
+                  00
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="h-14"
+                  onClick={() => handleNumpadClick("backspace")}
+                >
+                  <Delete className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
           </div>
 
           {/* Right - Summary */}
@@ -202,7 +217,7 @@ export function PaymentModal({
                   <span className="text-xl font-bold">{formatCurrency(total)}</span>
                 </div>
 
-                {selectedMethod === "efectivo" && (
+                {selectedMethod === "efectivo" ? (
                   <>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">
@@ -224,6 +239,36 @@ export function PaymentModal({
                       </span>
                     </div>
                   </>
+                ) : (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Cobrar con {selectedMethod === "tarjeta" ? "tarjeta" : "transferencia"}
+                      </span>
+                      <span className="text-xl font-bold">
+                        {formatCurrency(numericAmount > 0 ? numericAmount : total)}
+                      </span>
+                    </div>
+
+                    {isPartialPayment && (
+                      <div className="flex justify-between pt-3 border-t border-border">
+                        <span className="text-lg font-medium text-warning">
+                          Pendiente por cobrar
+                        </span>
+                        <span className="text-2xl font-bold text-warning">
+                          {formatCurrency(remainingAmount)}
+                        </span>
+                      </div>
+                    )}
+
+                    {isPartialPayment && (
+                      <div className="p-3 bg-warning/10 rounded-lg">
+                        <p className="text-sm text-warning">
+                          Este es un pago parcial. El restante deberá cobrarse con otro método.
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -233,10 +278,12 @@ export function PaymentModal({
               <Button
                 className="w-full h-14 text-lg bg-success hover:bg-success/90"
                 onClick={handleConfirm}
-                disabled={!canPay}
+                disabled={!canPay || (selectedMethod !== "efectivo" && numericAmount > total)}
               >
                 <Check className="w-5 h-5 mr-2" />
-                Confirmar Pago
+                {isPartialPayment
+                  ? `Cobrar ${formatCurrency(numericAmount)}`
+                  : "Confirmar Pago"}
               </Button>
               <Button variant="outline" className="w-full" onClick={onClose}>
                 Cancelar

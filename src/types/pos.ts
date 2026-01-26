@@ -8,6 +8,7 @@ export interface Product {
   categoryId: string;
   hasModifiers: boolean;
   modifierGroups?: ModifierGroup[];
+  defaultNotes?: string[]; // Notas predefinidas para este producto
 }
 
 export interface ModifierGroup {
