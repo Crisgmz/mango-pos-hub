@@ -98,7 +98,157 @@ export function BlindCashCloseModal({
   };
 
   const handlePrint = () => {
-    toast.success("Imprimiendo cierre de caja...");
+    const currentDate = new Date();
+    const formattedDate = currentDate.toLocaleDateString("es-DO", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    const formattedTime = currentDate.toLocaleTimeString("es-DO", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Cierre de Caja - MangoPOS</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Courier New', monospace; 
+            font-size: 12px; 
+            padding: 10px;
+            width: 80mm;
+          }
+          .header { text-align: center; margin-bottom: 15px; }
+          .header h1 { font-size: 16px; margin-bottom: 5px; }
+          .header p { font-size: 11px; color: #666; }
+          .divider { border-top: 1px dashed #333; margin: 10px 0; }
+          .row { display: flex; justify-content: space-between; margin: 4px 0; }
+          .row.header-row { font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 5px; }
+          .section-title { font-weight: bold; font-size: 13px; margin: 10px 0 5px; }
+          .total-row { font-weight: bold; font-size: 14px; margin-top: 10px; }
+          .alert { 
+            padding: 8px; 
+            margin: 10px 0; 
+            border: 1px solid; 
+            text-align: center;
+          }
+          .alert.success { border-color: #22c55e; color: #22c55e; }
+          .alert.danger { border-color: #ef4444; color: #ef4444; }
+          .denomination { font-size: 11px; }
+          .footer { text-align: center; margin-top: 15px; font-size: 10px; color: #666; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>MangoPOS Restaurant</h1>
+          <p>CIERRE DE CAJA</p>
+          <p>Fecha: ${formattedDate} | Hora: ${formattedTime}</p>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <div class="section-title">CONTEO DE EFECTIVO</div>
+        ${denominations
+          .filter((d) => d.count > 0)
+          .map(
+            (d) => `
+          <div class="row denomination">
+            <span>${d.label} x ${d.count}</span>
+            <span>${formatCurrency(d.value * d.count)}</span>
+          </div>
+        `
+          )
+          .join("")}
+        <div class="row total-row">
+          <span>Total Efectivo:</span>
+          <span>${formatCurrency(totalCounted)}</span>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <div class="section-title">COMPARACIÓN</div>
+        <div class="row header-row">
+          <span>Concepto</span>
+          <span>Esperado</span>
+          <span>Reportado</span>
+          <span>Dif.</span>
+        </div>
+        <div class="row">
+          <span>Efectivo</span>
+          <span>${formatCurrency(expectedCash)}</span>
+          <span>${formatCurrency(totalCounted)}</span>
+          <span>${totalCounted - expectedCash >= 0 ? "+" : ""}${formatCurrency(totalCounted - expectedCash)}</span>
+        </div>
+        <div class="row">
+          <span>Tarjetas</span>
+          <span>${formatCurrency(expectedCard)}</span>
+          <span>${formatCurrency(numericCard)}</span>
+          <span>${numericCard - expectedCard >= 0 ? "+" : ""}${formatCurrency(numericCard - expectedCard)}</span>
+        </div>
+        <div class="row">
+          <span>Transf.</span>
+          <span>${formatCurrency(expectedTransfer)}</span>
+          <span>${formatCurrency(numericTransfer)}</span>
+          <span>${numericTransfer - expectedTransfer >= 0 ? "+" : ""}${formatCurrency(numericTransfer - expectedTransfer)}</span>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <div class="row total-row">
+          <span>TOTAL ESPERADO:</span>
+          <span>${formatCurrency(expectedTotal)}</span>
+        </div>
+        <div class="row total-row">
+          <span>TOTAL REPORTADO:</span>
+          <span>${formatCurrency(totalReported)}</span>
+        </div>
+        
+        <div class="alert ${difference === 0 ? "success" : difference > 0 ? "success" : "danger"}">
+          ${
+            difference === 0
+              ? "✓ CAJA CUADRADA"
+              : difference > 0
+              ? `SOBRANTE: ${formatCurrency(Math.abs(difference))}`
+              : `FALTANTE: ${formatCurrency(Math.abs(difference))}`
+          }
+        </div>
+        
+        <div class="divider"></div>
+        
+        <div class="section-title">ESTADÍSTICAS DEL TURNO</div>
+        <div class="row">
+          <span>Total Ventas:</span>
+          <span>${formatCurrency(totalSales)}</span>
+        </div>
+        <div class="row">
+          <span>Transacciones:</span>
+          <span>${transactionCount}</span>
+        </div>
+        
+        <div class="footer">
+          <div class="divider"></div>
+          <p>Cajero: Admin</p>
+          <p>Impreso: ${formattedDate} ${formattedTime}</p>
+          <p>www.mangopos.do</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open("", "_blank", "width=400,height=600");
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    }
+    
+    toast.success("Cierre de caja enviado a impresión");
   };
 
   const handleClose = () => {
