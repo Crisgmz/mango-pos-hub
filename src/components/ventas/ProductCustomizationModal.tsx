@@ -27,7 +27,8 @@ interface ProductCustomizationModalProps {
   ) => void;
 }
 
-const quickNotes = [
+// Notas generales que aplican a cualquier producto
+const generalQuickNotes = [
   "Sin azúcar",
   "Con azúcar",
   "Sin sal",
@@ -283,22 +284,57 @@ export function ProductCustomizationModal({
               <h4 className="font-semibold text-foreground">
                 Notas especiales
               </h4>
-              <div className="flex flex-wrap gap-2">
-                {quickNotes.map((note) => (
-                  <Button
-                    key={note}
-                    variant="outline"
-                    size="sm"
-                    className={`rounded-full ${
-                      notes.includes(note)
-                        ? "bg-primary text-primary-foreground"
-                        : ""
-                    }`}
-                    onClick={() => addQuickNote(note)}
-                  >
-                    {note}
-                  </Button>
-                ))}
+              
+              {/* Product-specific notes first */}
+              {product.defaultNotes && product.defaultNotes.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                    Notas para {product.name}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {product.defaultNotes.map((note) => (
+                      <Button
+                        key={note}
+                        variant="outline"
+                        size="sm"
+                        className={`rounded-full ${
+                          notes.includes(note)
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "border-primary/50 text-primary hover:bg-primary/10"
+                        }`}
+                        onClick={() => addQuickNote(note)}
+                      >
+                        {note}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* General notes */}
+              <div className="space-y-2">
+                {product.defaultNotes && product.defaultNotes.length > 0 && (
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                    Notas generales
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {generalQuickNotes.map((note) => (
+                    <Button
+                      key={note}
+                      variant="outline"
+                      size="sm"
+                      className={`rounded-full ${
+                        notes.includes(note)
+                          ? "bg-primary text-primary-foreground"
+                          : ""
+                      }`}
+                      onClick={() => addQuickNote(note)}
+                    >
+                      {note}
+                    </Button>
+                  ))}
+                </div>
               </div>
               <Textarea
                 placeholder="Escribe instrucciones adicionales..."
