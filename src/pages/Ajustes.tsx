@@ -229,6 +229,14 @@ const settingsSections = [
         href: "/ajustes/usuarios",
       },
       {
+        id: "clientes",
+        title: "Clientes",
+        description: "Gestión de clientes y contactos",
+        icon: Users,
+        color: "bg-info/10 text-info",
+        href: "/clientes",
+      },
+      {
         id: "cajas",
         title: "Cajas",
         description: "Configuración de puntos de venta",
