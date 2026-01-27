@@ -18,7 +18,6 @@ const navItems = [
   { path: "/ventas", label: "Ventas", icon: ShoppingCart },
   { path: "/caja", label: "Caja", icon: Wallet },
   { path: "/cocina", label: "Cocina", icon: ChefHat },
-  { path: "/clientes", label: "Clientes", icon: Users },
   { path: "/productos", label: "Productos", icon: Package },
   { path: "/reportes", label: "Reportes", icon: BarChart3 },
   { path: "/ajustes", label: "Más Ajustes", icon: Settings },
