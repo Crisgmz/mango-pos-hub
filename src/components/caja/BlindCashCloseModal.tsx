@@ -6,7 +6,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 
@@ -49,6 +60,7 @@ export function BlindCashCloseModal({
   transactionCount,
 }: BlindCashCloseModalProps) {
   const [step, setStep] = useState<"count" | "result">("count");
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [denominations, setDenominations] = useState<DenominationCount[]>(
     cashDenominations.map((d) => ({ ...d, count: 0 }))
   );
@@ -79,6 +91,15 @@ export function BlindCashCloseModal({
     );
   };
 
+  const updateDenominationDirect = (index: number, value: string) => {
+    const numValue = parseInt(value) || 0;
+    setDenominations((prev) =>
+      prev.map((d, i) =>
+        i === index ? { ...d, count: Math.max(0, numValue) } : d
+      )
+    );
+  };
+
   const handleNumpadClick = (value: string) => {
     if (!activeInput) return;
 
@@ -94,6 +115,11 @@ export function BlindCashCloseModal({
   };
 
   const handleConfirmCount = () => {
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmFinal = () => {
+    setShowConfirmDialog(false);
     setStep("result");
   };
 
@@ -294,9 +320,14 @@ export function BlindCashCloseModal({
                         >
                           <span className="text-lg">-</span>
                         </Button>
-                        <span className="w-10 text-center font-bold">
-                          {denom.count}
-                        </span>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={denom.count || ""}
+                          onChange={(e) => updateDenominationDirect(index, e.target.value)}
+                          className="w-16 text-center font-bold h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          placeholder="0"
+                        />
                         <Button
                           variant="outline"
                           size="icon"
@@ -563,9 +594,9 @@ export function BlindCashCloseModal({
               <Button
                 variant="outline"
                 className="flex-1"
-                onClick={() => setStep("count")}
+                onClick={handleClose}
               >
-                Volver a Contar
+                Cerrar
               </Button>
               <Button className="flex-1 bg-primary hover:bg-primary/90" onClick={handlePrint}>
                 <Printer className="w-5 h-5 mr-2" />
@@ -575,6 +606,56 @@ export function BlindCashCloseModal({
           </div>
         )}
       </DialogContent>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Calculator className="w-5 h-5" />
+              Confirmar Conteo de Caja
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4 pt-2">
+                <p className="text-sm text-muted-foreground">
+                  Por favor verifica que los montos ingresados sean correctos. Una vez confirmado, no podrás volver a contar.
+                </p>
+                
+                <div className="bg-secondary/50 rounded-lg p-4 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Efectivo Contado:</span>
+                    <span className="font-bold text-foreground">{formatCurrency(totalCounted)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Total Tarjetas:</span>
+                    <span className="font-bold text-foreground">{formatCurrency(numericCard)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Total Transferencias:</span>
+                    <span className="font-bold text-foreground">{formatCurrency(numericTransfer)}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold text-foreground">TOTAL REPORTADO:</span>
+                    <span className="text-xl font-bold text-primary">{formatCurrency(totalReported)}</span>
+                  </div>
+                </div>
+
+                <p className="text-sm font-medium text-center">
+                  ¿Confirmas que esta información es correcta?
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Revisar de nuevo</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmFinal} className="bg-primary hover:bg-primary/90">
+              <Check className="w-4 h-4 mr-2" />
+              Confirmar Conteo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
