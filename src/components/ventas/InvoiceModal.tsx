@@ -19,6 +19,7 @@ interface InvoiceModalProps {
   items: CartItem[];
   subtotal: number;
   tax: number;
+  tip?: number;
   total: number;
   tableCode?: string;
   paymentMethod: PaymentMethod;
@@ -42,6 +43,7 @@ export function InvoiceModal({
   items,
   subtotal,
   tax,
+  tip,
   total,
   tableCode,
   paymentMethod,
@@ -174,6 +176,12 @@ export function InvoiceModal({
                 <span className="text-muted-foreground">ITBIS (18%)</span>
                 <span className="text-foreground">{formatCurrency(tax)}</span>
               </div>
+              {tip !== undefined && tip > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Propina Ley (10%)</span>
+                  <span className="text-foreground">{formatCurrency(tip)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-lg font-bold pt-2 border-t border-border">
                 <span>TOTAL</span>
                 <span className="text-primary">{formatCurrency(total)}</span>

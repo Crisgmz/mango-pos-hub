@@ -19,6 +19,7 @@ interface PreBillModalProps {
   items: CartItem[];
   subtotal: number;
   tax: number;
+  tip?: number;
   total: number;
   tableCode?: string;
   onPrint?: () => void;
@@ -30,6 +31,7 @@ export function PreBillModal({
   items,
   subtotal,
   tax,
+  tip,
   total,
   tableCode,
   onPrint,
@@ -146,6 +148,12 @@ export function PreBillModal({
               <span className="text-muted-foreground">ITBIS (18%)</span>
               <span className="text-foreground">{formatCurrency(tax)}</span>
             </div>
+            {tip !== undefined && tip > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Propina Ley (10%)</span>
+                <span className="text-foreground">{formatCurrency(tip)}</span>
+              </div>
+            )}
             <Separator className="my-2" />
             <div className="flex justify-between text-lg font-bold">
               <span>TOTAL</span>

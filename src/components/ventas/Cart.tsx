@@ -7,22 +7,26 @@ interface CartProps {
   items: CartItem[];
   subtotal: number;
   tax: number;
+  tip?: number;
   total: number;
   tableCode?: string;
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   onRemoveItem: (itemId: string) => void;
   onClearCart: () => void;
-  onSendToKitchen: () => void;
-  onSplitBill: () => void;
+  onSendToKitchen?: () => void;
+  onSplitBill?: () => void;
   onPay: () => void;
   onPreBill?: () => void;
   orderSent?: boolean;
+  isQuickSale?: boolean;
+  isManualSale?: boolean;
 }
 
 export function Cart({
   items,
   subtotal,
   tax,
+  tip,
   total,
   tableCode,
   onUpdateQuantity,
@@ -33,6 +37,8 @@ export function Cart({
   onPay,
   onPreBill,
   orderSent = false,
+  isQuickSale = false,
+  isManualSale = false,
 }: CartProps) {
   const formatCurrency = (amount: number) =>
     `RD$ ${amount.toLocaleString("es-DO")}`;
@@ -167,6 +173,12 @@ export function Cart({
             <span className="text-muted-foreground">ITBIS (18%)</span>
             <span className="text-foreground">{formatCurrency(tax)}</span>
           </div>
+          {tip !== undefined && tip > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Propina (10%)</span>
+              <span className="text-foreground">{formatCurrency(tip)}</span>
+            </div>
+          )}
           <div className="flex justify-between text-lg font-bold pt-2 border-t border-border">
             <span>Total</span>
             <span className="text-primary">{formatCurrency(total)}</span>
@@ -175,50 +187,70 @@ export function Cart({
 
         {/* Action Buttons */}
         <div className="space-y-2">
-          {tableCode && !orderSent && (
+          {/* Quick Sale - Just pay button */}
+          {isQuickSale && (
             <Button
-              className="w-full bg-primary hover:bg-primary/90"
+              className="w-full bg-success hover:bg-success/90"
               size="lg"
-              onClick={onSendToKitchen}
+              onClick={onPay}
               disabled={items.length === 0}
             >
-              <ChefHat className="w-5 h-5 mr-2" />
-              Enviar a Cocina
+              <CreditCard className="w-5 h-5 mr-2" />
+              Pagar {formatCurrency(total)}
             </Button>
           )}
 
-          {tableCode && orderSent && (
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={onPreBill}
-                disabled={items.length === 0}
-              >
-                <FileText className="w-5 h-5 mr-2" />
-                Pre-Cuenta
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={onSplitBill}
-                disabled={items.length === 0}
-              >
-                <Split className="w-5 h-5 mr-2" />
-                Dividir
-              </Button>
-            </div>
-          )}
+          {/* Manual/Table Sale - Full flow */}
+          {!isQuickSale && (
+            <>
+              {tableCode && !orderSent && onSendToKitchen && (
+                <Button
+                  className="w-full bg-primary hover:bg-primary/90"
+                  size="lg"
+                  onClick={onSendToKitchen}
+                  disabled={items.length === 0}
+                >
+                  <ChefHat className="w-5 h-5 mr-2" />
+                  Enviar a Cocina
+                </Button>
+              )}
 
-          <Button
-            className="w-full bg-success hover:bg-success/90"
-            size="lg"
-            onClick={onPay}
-            disabled={items.length === 0}
-          >
-            <CreditCard className="w-5 h-5 mr-2" />
-            Pagar {formatCurrency(total)}
-          </Button>
+              {tableCode && orderSent && (
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={onPreBill}
+                    disabled={items.length === 0}
+                  >
+                    <FileText className="w-5 h-5 mr-2" />
+                    Pre-Cuenta
+                  </Button>
+                  {onSplitBill && (
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={onSplitBill}
+                      disabled={items.length === 0}
+                    >
+                      <Split className="w-5 h-5 mr-2" />
+                      Dividir
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              <Button
+                className="w-full bg-success hover:bg-success/90"
+                size="lg"
+                onClick={onPay}
+                disabled={items.length === 0}
+              >
+                <CreditCard className="w-5 h-5 mr-2" />
+                Pagar {formatCurrency(total)}
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </div>
