@@ -1,6 +1,9 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { TableCard } from "./TableCard";
 import { OrderScreen } from "./OrderScreen";
+import { QuickSaleScreen } from "./QuickSaleScreen";
+import { ManualSaleScreen } from "./ManualSaleScreen";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table } from "@/types/pos";
 import { toast } from "sonner";
@@ -23,13 +26,47 @@ const initialTables: Table[] = [
 ];
 
 export function TablesGrid() {
+  const [searchParams] = useSearchParams();
+  const mode = searchParams.get("mode");
+  
   const [activeZone, setActiveZone] = useState("salon");
   const [tables, setTables] = useState<Table[]>(initialTables);
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
+  const [showQuickSale, setShowQuickSale] = useState(false);
+  const [showManualSale, setShowManualSale] = useState(false);
 
   const filteredTables = tables.filter((table) => table.zone === activeZone);
   const occupiedCount = filteredTables.filter((t) => t.status === "ocupado").length;
   const availableCount = filteredTables.filter((t) => t.status === "disponible").length;
+
+  // Handle mode changes
+  if (mode === "rapida" && !showQuickSale && !selectedTable && !showManualSale) {
+    return (
+      <div className="flex-1">
+        <QuickSaleScreen onBack={() => window.history.back()} />
+      </div>
+    );
+  }
+
+  if (mode === "manual" && !showManualSale && !selectedTable && !showQuickSale) {
+    return (
+      <div className="flex-1">
+        <ManualSaleScreen
+          onBack={() => window.history.back()}
+          tables={tables}
+          onTableAssigned={(tableId) => {
+            setTables((prev) =>
+              prev.map((t) =>
+                t.id === tableId
+                  ? { ...t, status: "ocupado" as const, time: "00:00" }
+                  : t
+              )
+            );
+          }}
+        />
+      </div>
+    );
+  }
 
   const handleTableClick = (table: Table) => {
     setSelectedTable(table);
