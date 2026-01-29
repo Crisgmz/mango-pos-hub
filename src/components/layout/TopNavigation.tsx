@@ -8,10 +8,10 @@ import {
   BarChart3, 
   Settings,
   Bell,
-  User,
   ChevronDown,
   Shield,
-  Lock
+  Lock,
+  LogOut
 } from "lucide-react";
 import logoMangopos from "@/assets/logo-mangopos.png";
 import { usePermissions, useModuleAccess } from "@/contexts/PermissionsContext";
@@ -24,12 +24,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 const roleColors: Record<string, string> = {
   Administrador: "bg-primary text-primary-foreground",
-  Supervisor: "bg-info text-info-foreground",
-  Cajero: "bg-success text-success-foreground",
+  Supervisor: "bg-info text-white",
+  Cajero: "bg-success text-white",
   Mesero: "bg-warning text-warning-foreground",
   Cocina: "bg-destructive text-destructive-foreground",
   Delivery: "bg-secondary text-secondary-foreground",
@@ -39,10 +40,9 @@ const allRoles = ["Administrador", "Supervisor", "Cajero", "Mesero", "Cocina", "
 
 export function TopNavigation() {
   const location = useLocation();
-  const { currentRole, setCurrentRole, roleDescription } = usePermissions();
+  const { currentRole, setCurrentRole, roleDescription, currentUser, logout } = usePermissions();
   const { 
     canAccessVentas, 
-    canAccessVentaRapida, 
     canAccessCaja, 
     canAccessCocina, 
     canAccessReportes, 
@@ -59,6 +59,15 @@ export function TopNavigation() {
     { path: "/reportes", label: "Reportes", icon: BarChart3, hasAccess: canAccessReportes },
     { path: "/ajustes", label: "Más Ajustes", icon: Settings, hasAccess: canAccessAjustes },
   ];
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border shadow-soft">
@@ -79,7 +88,7 @@ export function TopNavigation() {
               return (
                 <div
                   key={item.path}
-                  className="nav-link opacity-40 cursor-not-allowed"
+                  className="nav-link opacity-40 cursor-not-allowed relative"
                   title={`Sin acceso: ${item.label}`}
                 >
                   <Lock className="w-3 h-3 absolute -top-1 -right-1 text-destructive" />
@@ -108,21 +117,36 @@ export function TopNavigation() {
             <Bell className="w-5 h-5" />
           </button>
           
-          {/* Role Selector */}
+          {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-lg border border-border hover:bg-accent transition-colors">
                 <div className="text-right hidden sm:block">
-                  <p className="text-sm font-medium text-foreground">{currentRole}</p>
-                  <p className="text-[10px] text-muted-foreground truncate max-w-[100px]">Demo Mode</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {currentUser?.name.split(" ")[0] || currentRole}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground truncate max-w-[100px]">
+                    {currentRole}
+                  </p>
                 </div>
-                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", roleColors[currentRole])}>
-                  <Shield className="w-4 h-4" />
-                </div>
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className={cn("font-medium text-xs", roleColors[currentRole])}>
+                    {currentUser ? getInitials(currentUser.name) : <Shield className="w-4 h-4" />}
+                  </AvatarFallback>
+                </Avatar>
                 <ChevronDown className="w-4 h-4 text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-56 bg-popover">
+              {currentUser && (
+                <>
+                  <div className="px-3 py-2">
+                    <p className="font-medium text-foreground">{currentUser.name}</p>
+                    <p className="text-xs text-muted-foreground">{currentRole}</p>
+                  </div>
+                  <DropdownMenuSeparator />
+                </>
+              )}
               <DropdownMenuLabel className="flex items-center gap-2">
                 <Shield className="w-4 h-4" />
                 Cambiar Rol (Demo)
@@ -148,6 +172,14 @@ export function TopNavigation() {
                 <p className="font-medium mb-1">Permisos actuales:</p>
                 <p className="line-clamp-2">{roleDescription}</p>
               </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={logout}
+                className="text-destructive focus:text-destructive cursor-pointer"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Cerrar Sesión
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
