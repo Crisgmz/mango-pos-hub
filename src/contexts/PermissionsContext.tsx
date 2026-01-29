@@ -1,9 +1,23 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from "react";
-import { DEFAULT_ROLES, ALL_PERMISSIONS } from "@/types/users";
+import { DEFAULT_ROLES } from "@/types/users";
 
 type RoleName = "Administrador" | "Supervisor" | "Cajero" | "Mesero" | "Cocina" | "Delivery";
 
+interface AuthUser {
+  id: string;
+  name: string;
+  role: RoleName;
+  pin: string;
+}
+
 interface PermissionsContextType {
+  // Auth state
+  isAuthenticated: boolean;
+  currentUser: AuthUser | null;
+  login: (user: AuthUser) => void;
+  logout: () => void;
+  
+  // Role/Permissions
   currentRole: RoleName;
   setCurrentRole: (role: RoleName) => void;
   hasPermission: (permissionCode: string) => boolean;
@@ -17,11 +31,25 @@ interface PermissionsContextType {
 const PermissionsContext = createContext<PermissionsContextType | undefined>(undefined);
 
 export function PermissionsProvider({ children }: { children: ReactNode }) {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [currentRole, setCurrentRole] = useState<RoleName>("Administrador");
 
   const currentRoleData = DEFAULT_ROLES.find((r) => r.name === currentRole);
   const rolePermissions = currentRoleData?.permissions || [];
   const roleDescription = currentRoleData?.description || "";
+
+  const login = useCallback((user: AuthUser) => {
+    setCurrentUser(user);
+    setCurrentRole(user.role);
+    setIsAuthenticated(true);
+  }, []);
+
+  const logout = useCallback(() => {
+    setCurrentUser(null);
+    setIsAuthenticated(false);
+    setCurrentRole("Administrador");
+  }, []);
 
   const hasPermission = useCallback(
     (permissionCode: string) => {
@@ -51,6 +79,10 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   return (
     <PermissionsContext.Provider
       value={{
+        isAuthenticated,
+        currentUser,
+        login,
+        logout,
         currentRole,
         setCurrentRole,
         hasPermission,
