@@ -1,7 +1,8 @@
-import { Minus, Plus, Trash2, X, ChefHat, CreditCard, Split, FileText } from "lucide-react";
+import { Minus, Plus, Trash2, X, ChefHat, CreditCard, Split, FileText, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CartItem } from "@/types/pos";
+import { useModuleAccess } from "@/contexts/PermissionsContext";
 
 interface CartProps {
   items: CartItem[];
@@ -40,6 +41,7 @@ export function Cart({
   isQuickSale = false,
   isManualSale = false,
 }: CartProps) {
+  const { canProcessPayments, canSendToKitchen, canSplitBill } = useModuleAccess();
   const formatCurrency = (amount: number) =>
     `RD$ ${amount.toLocaleString("es-DO")}`;
 
@@ -188,7 +190,7 @@ export function Cart({
         {/* Action Buttons */}
         <div className="space-y-2">
           {/* Quick Sale - Just pay button */}
-          {isQuickSale && (
+          {isQuickSale && canProcessPayments && (
             <Button
               className="w-full bg-success hover:bg-success/90"
               size="lg"
@@ -203,7 +205,7 @@ export function Cart({
           {/* Manual/Table Sale - Full flow */}
           {!isQuickSale && (
             <>
-              {tableCode && !orderSent && onSendToKitchen && (
+              {tableCode && !orderSent && onSendToKitchen && canSendToKitchen && (
                 <Button
                   className="w-full bg-primary hover:bg-primary/90"
                   size="lg"
@@ -226,7 +228,7 @@ export function Cart({
                     <FileText className="w-5 h-5 mr-2" />
                     Pre-Cuenta
                   </Button>
-                  {onSplitBill && (
+                  {onSplitBill && canSplitBill && (
                     <Button
                       variant="outline"
                       size="lg"
@@ -240,15 +242,27 @@ export function Cart({
                 </div>
               )}
 
-              <Button
-                className="w-full bg-success hover:bg-success/90"
-                size="lg"
-                onClick={onPay}
-                disabled={items.length === 0}
-              >
-                <CreditCard className="w-5 h-5 mr-2" />
-                Pagar {formatCurrency(total)}
-              </Button>
+              {canProcessPayments ? (
+                <Button
+                  className="w-full bg-success hover:bg-success/90"
+                  size="lg"
+                  onClick={onPay}
+                  disabled={items.length === 0}
+                >
+                  <CreditCard className="w-5 h-5 mr-2" />
+                  Pagar {formatCurrency(total)}
+                </Button>
+              ) : (
+                <div className="p-3 rounded-lg bg-muted/50 border border-border text-center">
+                  <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm">
+                    <Lock className="w-4 h-4" />
+                    Sin acceso a cobros
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Envía a cocina y solicita a un cajero
+                  </p>
+                </div>
+              )}
             </>
           )}
         </div>
