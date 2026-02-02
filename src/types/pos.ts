@@ -61,6 +61,8 @@ export interface Table {
   total?: number;
   zone: string;
   orderId?: string;
+  waiterId?: string;
+  waiterName?: string;
 }
 
 export interface Order {

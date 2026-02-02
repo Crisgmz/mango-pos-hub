@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { PermissionsProvider, usePermissions } from "@/contexts/PermissionsContext";
+import { ProductAvailabilityProvider } from "@/contexts/ProductAvailabilityContext";
 import { PinLogin } from "@/components/auth/PinLogin";
 import Index from "./pages/Index";
 import Ventas from "./pages/Ventas";
@@ -64,11 +65,13 @@ function AppRoutes() {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <PermissionsProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <AppRoutes />
-      </TooltipProvider>
+      <ProductAvailabilityProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <AppRoutes />
+        </TooltipProvider>
+      </ProductAvailabilityProvider>
     </PermissionsProvider>
   </QueryClientProvider>
 );

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Star, Grid3X3, List } from "lucide-react";
+import { Search, Star, Grid3X3, List, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Category, Product } from "@/types/pos";
 import { categories, products } from "@/data/mock-products";
+import { useProductAvailability } from "@/contexts/ProductAvailabilityContext";
+import { toast } from "sonner";
 
 interface ProductCatalogProps {
   onSelectProduct: (product: Product) => void;
@@ -16,6 +18,7 @@ export function ProductCatalog({ onSelectProduct }: ProductCatalogProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("categorias");
+  const { isProductAvailable, getStockOutCount } = useProductAvailability();
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch = product.name
@@ -29,6 +32,17 @@ export function ProductCatalog({ onSelectProduct }: ProductCatalogProps) {
 
   const formatCurrency = (amount: number) =>
     `RD$ ${amount.toLocaleString("es-DO")}`;
+
+  const handleProductClick = (product: Product) => {
+    if (!isProductAvailable(product.id)) {
+      toast.error(`${product.name} no está disponible`, {
+        description: "Este producto está marcado como agotado",
+        icon: <AlertTriangle className="w-4 h-4" />,
+      });
+      return;
+    }
+    onSelectProduct(product);
+  };
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -105,30 +119,52 @@ export function ProductCatalog({ onSelectProduct }: ProductCatalogProps) {
 
           <ScrollArea className="flex-1">
             <div className="p-4 grid grid-cols-2 md:grid-cols-3 gap-3">
-              {filteredProducts.map((product) => (
-                <button
-                  key={product.id}
-                  onClick={() => onSelectProduct(product)}
-                  className="bg-card hover:bg-accent border border-border rounded-xl p-4 text-left transition-all hover:shadow-md group"
-                >
-                  <div className="flex items-start justify-between">
-                    <h4 className="font-medium text-foreground group-hover:text-primary transition-colors">
-                      {product.name}
-                    </h4>
-                  </div>
-                  <p className="text-lg font-bold text-primary mt-2">
-                    {formatCurrency(product.price)}
-                  </p>
-                  {product.hasModifiers && (
-                    <Badge
-                      variant="secondary"
-                      className="mt-2 text-xs bg-warning/10 text-warning border-warning/20"
-                    >
-                      Con modificadores
-                    </Badge>
-                  )}
-                </button>
-              ))}
+              {filteredProducts.map((product) => {
+                const available = isProductAvailable(product.id);
+                return (
+                  <button
+                    key={product.id}
+                    onClick={() => handleProductClick(product)}
+                    disabled={!available}
+                    className={`bg-card border border-border rounded-xl p-4 text-left transition-all group relative ${
+                      available 
+                        ? "hover:bg-accent hover:shadow-md" 
+                        : "opacity-60 cursor-not-allowed"
+                    }`}
+                  >
+                    {!available && (
+                      <div className="absolute top-2 right-2">
+                        <Badge variant="destructive" className="text-xs">
+                          <AlertTriangle className="w-3 h-3 mr-1" />
+                          Agotado
+                        </Badge>
+                      </div>
+                    )}
+                    <div className="flex items-start justify-between">
+                      <h4 className={`font-medium transition-colors ${
+                        available 
+                          ? "text-foreground group-hover:text-primary" 
+                          : "text-muted-foreground line-through"
+                      }`}>
+                        {product.name}
+                      </h4>
+                    </div>
+                    <p className={`text-lg font-bold mt-2 ${
+                      available ? "text-primary" : "text-muted-foreground"
+                    }`}>
+                      {formatCurrency(product.price)}
+                    </p>
+                    {product.hasModifiers && available && (
+                      <Badge
+                        variant="secondary"
+                        className="mt-2 text-xs bg-warning/10 text-warning border-warning/20"
+                      >
+                        Con modificadores
+                      </Badge>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </ScrollArea>
         </div>
