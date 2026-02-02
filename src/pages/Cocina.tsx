@@ -7,10 +7,13 @@ import {
   Clock, 
   CheckCircle2,
   Timer,
-  Utensils
+  Utensils,
+  AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { StockOutPanel } from "@/components/cocina/StockOutPanel";
+import { useProductAvailability } from "@/contexts/ProductAvailabilityContext";
 
 interface Order {
   id: string;
@@ -67,6 +70,7 @@ const orders: Order[] = [
 
 const Cocina = () => {
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const { stockOutProducts, getStockOutCount } = useProductAvailability();
   const waitingOrders = orders.filter((o) => o.status === "waiting");
   const preparingOrders = orders.filter((o) => o.status === "preparing");
 
@@ -84,6 +88,7 @@ const Cocina = () => {
           </div>
 
           <div className="flex items-center gap-4">
+            <StockOutPanel />
             <div className="flex items-center gap-3 px-4 py-2 bg-card rounded-lg border border-border">
               <span className="text-sm text-muted-foreground">Auto-refresh</span>
               <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} />
@@ -102,6 +107,21 @@ const Cocina = () => {
             </div>
           </div>
         </div>
+
+        {/* Stock Out Alert */}
+        {getStockOutCount() > 0 && (
+          <div className="flex items-center gap-3 p-4 bg-destructive/10 rounded-lg border border-destructive/20">
+            <AlertTriangle className="w-5 h-5 text-destructive" />
+            <div>
+              <p className="font-medium text-destructive">
+                {getStockOutCount()} producto(s) agotado(s)
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {stockOutProducts.map((p) => p.productName).join(", ")}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
