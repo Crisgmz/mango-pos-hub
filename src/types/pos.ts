@@ -1,14 +1,31 @@
 // Tipos centrales del POS
 
+export type ProductType = "Plato" | "Bebida" | "Postre" | "Entrada" | "Acompañante" | "Otro";
+
+export interface Menu {
+  id: string;
+  name: string;
+}
+
 export interface Product {
   id: string;
   name: string;
+  description?: string;
+  productType: ProductType;
+  menuId: string;
   price: number;
+  cost?: number;
+  sku?: string;
+  barcode?: string;
   image?: string;
   categoryId: string;
   hasModifiers: boolean;
+  hasVariations: boolean;
+  available: boolean;
+  taxIncluded: boolean;
+  taxRate: number;
   modifierGroups?: ModifierGroup[];
-  defaultNotes?: string[]; // Notas predefinidas para este producto
+  defaultNotes?: string[];
 }
 
 export interface ModifierGroup {
