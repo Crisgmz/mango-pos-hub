@@ -18,6 +18,7 @@ import Ajustes from "./pages/Ajustes";
 import Usuarios from "./pages/ajustes/Usuarios";
 import Mozos from "./pages/ajustes/Mozos";
 import ImpresionProductos from "./pages/ajustes/ImpresionProductos";
+import Impresoras from "./pages/ajustes/Impresoras";
 import NotFound from "./pages/NotFound";
 import { toast } from "sonner";
 
@@ -56,6 +57,7 @@ function AppRoutes() {
         <Route path="/ajustes/usuarios" element={<Usuarios />} />
         <Route path="/ajustes/mozos" element={<Mozos />} />
         <Route path="/ajustes/impresion-productos" element={<ImpresionProductos />} />
+        <Route path="/ajustes/impresoras" element={<Impresoras />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
