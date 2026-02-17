@@ -19,6 +19,17 @@ import Usuarios from "./pages/ajustes/Usuarios";
 import Mozos from "./pages/ajustes/Mozos";
 import ImpresionProductos from "./pages/ajustes/ImpresionProductos";
 import Impresoras from "./pages/ajustes/Impresoras";
+import VentaRapida from "./pages/ajustes/VentaRapida";
+import VentaManual from "./pages/ajustes/VentaManual";
+import Delivery from "./pages/ajustes/Delivery";
+import SelfService from "./pages/ajustes/SelfService";
+import SalonesMesas from "./pages/ajustes/SalonesMesas";
+import AperturaCierre from "./pages/ajustes/AperturaCierre";
+import HistorialVenta from "./pages/ajustes/HistorialVenta";
+import IngresosEgresos from "./pages/ajustes/IngresosEgresos";
+import GestionCierres from "./pages/ajustes/GestionCierres";
+import NotasCredito from "./pages/ajustes/NotasCredito";
+import MonitorVentas from "./pages/ajustes/MonitorVentas";
 import NotFound from "./pages/NotFound";
 import { toast } from "sonner";
 
@@ -58,6 +69,17 @@ function AppRoutes() {
         <Route path="/ajustes/mozos" element={<Mozos />} />
         <Route path="/ajustes/impresion-productos" element={<ImpresionProductos />} />
         <Route path="/ajustes/impresoras" element={<Impresoras />} />
+        <Route path="/ajustes/venta-rapida" element={<VentaRapida />} />
+        <Route path="/ajustes/venta-manual" element={<VentaManual />} />
+        <Route path="/ajustes/delivery" element={<Delivery />} />
+        <Route path="/ajustes/self-service" element={<SelfService />} />
+        <Route path="/ajustes/salones-mesas" element={<SalonesMesas />} />
+        <Route path="/ajustes/apertura-cierre" element={<AperturaCierre />} />
+        <Route path="/ajustes/historial-venta" element={<HistorialVenta />} />
+        <Route path="/ajustes/ingresos-egresos" element={<IngresosEgresos />} />
+        <Route path="/ajustes/gestion-cierres" element={<GestionCierres />} />
+        <Route path="/ajustes/notas-credito" element={<NotasCredito />} />
+        <Route path="/ajustes/monitor-ventas" element={<MonitorVentas />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
