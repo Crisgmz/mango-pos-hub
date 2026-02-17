@@ -46,7 +46,7 @@ const settingsSections = [
         description: "Modo de venta ágil sin mesas",
         icon: ShoppingCart,
         color: "bg-primary/10 text-primary",
-        href: "/ajustes/venta-rapida",
+        href: "/ventas?mode=rapida",
       },
       {
         id: "venta-manual",
@@ -54,7 +54,7 @@ const settingsSections = [
         description: "Ingreso manual de productos y precios",
         icon: ClipboardList,
         color: "bg-info/10 text-info",
-        href: "/ajustes/venta-manual",
+        href: "/ventas?mode=manual",
       },
       {
         id: "delivery",
@@ -62,7 +62,7 @@ const settingsSections = [
         description: "Configuración de entregas a domicilio",
         icon: Truck,
         color: "bg-warning/10 text-warning",
-        href: "/ajustes/delivery",
+        href: "/ventas?mode=delivery",
       },
       {
         id: "self-service",
@@ -70,7 +70,7 @@ const settingsSections = [
         description: "Modo autoservicio para clientes",
         icon: Smartphone,
         color: "bg-success/10 text-success",
-        href: "/ajustes/self-service",
+        href: "/ventas?mode=selfservice",
       },
       {
         id: "salones-mesas",
@@ -78,7 +78,7 @@ const settingsSections = [
         description: "Gestión de zonas y mesas del local",
         icon: Layers,
         color: "bg-muted-foreground/10 text-muted-foreground",
-        href: "/ajustes/salones-mesas",
+        href: "/ventas",
       },
     ],
   },
@@ -91,7 +91,7 @@ const settingsSections = [
         description: "Flujos de apertura y cierre de caja",
         icon: Wallet,
         color: "bg-success/10 text-success",
-        href: "/ajustes/apertura-cierre",
+        href: "/caja",
       },
       {
         id: "historial-venta",
@@ -99,7 +99,7 @@ const settingsSections = [
         description: "Consulta de ventas realizadas",
         icon: Receipt,
         color: "bg-primary/10 text-primary",
-        href: "/ajustes/historial-venta",
+        href: "/caja",
       },
       {
         id: "ingresos-egresos",
@@ -107,7 +107,7 @@ const settingsSections = [
         description: "Movimientos de efectivo en caja",
         icon: DollarSign,
         color: "bg-info/10 text-info",
-        href: "/ajustes/ingresos-egresos",
+        href: "/caja",
       },
       {
         id: "gestion-cierres",
@@ -115,7 +115,7 @@ const settingsSections = [
         description: "Administración de cierres y cuadres",
         icon: ClipboardCheck,
         color: "bg-warning/10 text-warning",
-        href: "/ajustes/gestion-cierres",
+        href: "/caja",
       },
       {
         id: "notas-credito",
