@@ -144,7 +144,7 @@ const settingsSections = [
         description: "Catálogo de productos",
         icon: Package,
         color: "bg-primary/10 text-primary",
-        href: "/ajustes/productos-categorias",
+        href: "/productos",
       },
       {
         id: "modificadores",
