@@ -21,6 +21,11 @@ import ImpresionProductos from "./pages/ajustes/ImpresionProductos";
 import Impresoras from "./pages/ajustes/Impresoras";
 import NotasCredito from "./pages/ajustes/NotasCredito";
 import MonitorVentas from "./pages/ajustes/MonitorVentas";
+import Modificadores from "./pages/ajustes/Modificadores";
+import Combos from "./pages/ajustes/Combos";
+import MenuConfig from "./pages/ajustes/MenuConfig";
+import Recetas from "./pages/ajustes/Recetas";
+import Insumos from "./pages/ajustes/Insumos";
 import NotFound from "./pages/NotFound";
 import { toast } from "sonner";
 
@@ -62,6 +67,11 @@ function AppRoutes() {
         <Route path="/ajustes/impresoras" element={<Impresoras />} />
         <Route path="/ajustes/notas-credito" element={<NotasCredito />} />
         <Route path="/ajustes/monitor-ventas" element={<MonitorVentas />} />
+        <Route path="/ajustes/modificadores" element={<Modificadores />} />
+        <Route path="/ajustes/combos" element={<Combos />} />
+        <Route path="/ajustes/menu" element={<MenuConfig />} />
+        <Route path="/ajustes/recetas" element={<Recetas />} />
+        <Route path="/ajustes/insumos" element={<Insumos />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
