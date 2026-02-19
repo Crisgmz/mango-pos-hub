@@ -26,6 +26,14 @@ import Combos from "./pages/ajustes/Combos";
 import MenuConfig from "./pages/ajustes/MenuConfig";
 import Recetas from "./pages/ajustes/Recetas";
 import Insumos from "./pages/ajustes/Insumos";
+import ConfigComandas from "./pages/ajustes/ConfigComandas";
+import ConfigPrecuentas from "./pages/ajustes/ConfigPrecuentas";
+import Turnos from "./pages/ajustes/Turnos";
+import Cajas from "./pages/ajustes/Cajas";
+import Impuestos from "./pages/ajustes/Impuestos";
+import Monedas from "./pages/ajustes/Monedas";
+import ConfigRegionales from "./pages/ajustes/ConfigRegionales";
+import Sucursales from "./pages/ajustes/Sucursales";
 import NotFound from "./pages/NotFound";
 import { toast } from "sonner";
 
@@ -72,6 +80,14 @@ function AppRoutes() {
         <Route path="/ajustes/menu" element={<MenuConfig />} />
         <Route path="/ajustes/recetas" element={<Recetas />} />
         <Route path="/ajustes/insumos" element={<Insumos />} />
+        <Route path="/ajustes/config-comandas" element={<ConfigComandas />} />
+        <Route path="/ajustes/config-precuentas" element={<ConfigPrecuentas />} />
+        <Route path="/ajustes/turnos" element={<Turnos />} />
+        <Route path="/ajustes/cajas" element={<Cajas />} />
+        <Route path="/ajustes/impuestos" element={<Impuestos />} />
+        <Route path="/ajustes/monedas" element={<Monedas />} />
+        <Route path="/ajustes/config-regionales" element={<ConfigRegionales />} />
+        <Route path="/ajustes/sucursales" element={<Sucursales />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
