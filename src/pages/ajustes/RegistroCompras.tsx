@@ -52,13 +52,20 @@ export default function RegistroCompras() {
   const [compras, setCompras] = useState<Compra[]>(initialCompras);
   const [isOpen, setIsOpen] = useState(false);
   const [paymentFilter, setPaymentFilter] = useState("all");
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    date: string;
+    invoice: string;
+    supplier: string;
+    warehouse: string;
+    total: number;
+    paymentStatus: "Pagado" | "Parcial" | "Pendiente";
+  }>({
     date: "2026-02-19",
     invoice: "",
     supplier: "",
     warehouse: "Principal",
     total: 0,
-    paymentStatus: "Pendiente" as const,
+    paymentStatus: "Pendiente",
   });
 
   const filtered = compras.filter((compra) => (paymentFilter === "all" ? true : compra.paymentStatus === paymentFilter));

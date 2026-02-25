@@ -53,13 +53,20 @@ export default function Requerimientos() {
   const [requests, setRequests] = useState<RequestItem[]>(initialRequests);
   const [isOpen, setIsOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    date: string;
+    from: string;
+    to: string;
+    product: string;
+    qty: number;
+    priority: "Baja" | "Media" | "Alta";
+  }>({
     date: "2026-02-19",
     from: "Sucursal Norte",
     to: "Principal",
     product: "",
     qty: 1,
-    priority: "Media" as const,
+    priority: "Media",
   });
 
   const filtered = requests.filter((item) => (statusFilter === "all" ? true : item.status === statusFilter));
