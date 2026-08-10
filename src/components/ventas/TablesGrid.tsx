@@ -5,7 +5,7 @@ import { OrderScreen } from "./OrderScreen";
 import { QuickSaleScreen } from "./QuickSaleScreen";
 import { ManualSaleScreen } from "./ManualSaleScreen";
 import { PinVerificationModal } from "@/components/auth/PinVerificationModal";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Table } from "@/types/pos";
 import { usePermissions, useModuleAccess } from "@/contexts/PermissionsContext";
 import { toast } from "sonner";
