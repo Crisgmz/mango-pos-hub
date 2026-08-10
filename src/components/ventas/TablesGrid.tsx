@@ -7,7 +7,7 @@ import { ManualSaleScreen } from "./ManualSaleScreen";
 import { PinVerificationModal } from "@/components/auth/PinVerificationModal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table } from "@/types/pos";
-import { usePermissions } from "@/contexts/PermissionsContext";
+import { usePermissions, useModuleAccess } from "@/contexts/PermissionsContext";
 import { toast } from "sonner";
 
 const initialTables: Table[] = [
@@ -31,6 +31,7 @@ export function TablesGrid() {
   const [searchParams] = useSearchParams();
   const mode = searchParams.get("mode");
   const { currentUser, currentRole } = usePermissions();
+  const { canAccessVentaRapida, canAccessVentaManual } = useModuleAccess();
   
   const [activeZone, setActiveZone] = useState("salon");
   const [tables, setTables] = useState<Table[]>(initialTables);
@@ -47,7 +48,7 @@ export function TablesGrid() {
   const availableCount = filteredTables.filter((t) => t.status === "disponible").length;
 
   // Handle mode changes
-  if (mode === "rapida" && !showQuickSale && !selectedTable && !showManualSale) {
+  if (mode === "rapida" && canAccessVentaRapida && !showQuickSale && !selectedTable && !showManualSale) {
     return (
       <div className="flex-1">
         <QuickSaleScreen onBack={() => window.history.back()} />
@@ -55,7 +56,7 @@ export function TablesGrid() {
     );
   }
 
-  if (mode === "manual" && !showManualSale && !selectedTable && !showQuickSale) {
+  if (mode === "manual" && canAccessVentaManual && !showManualSale && !selectedTable && !showQuickSale) {
     return (
       <div className="flex-1">
         <ManualSaleScreen
@@ -148,25 +149,25 @@ export function TablesGrid() {
   }
 
   return (
-    <div className="flex-1 p-6">
+    <div className="flex-1 p-3 md:p-6 overflow-y-auto">
       <Tabs value={activeZone} onValueChange={setActiveZone}>
-        <div className="flex items-center justify-between mb-6">
-          <TabsList className="bg-secondary p-1 rounded-xl">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4 md:mb-6">
+          <TabsList className="bg-secondary p-1 rounded-xl w-full md:w-auto grid grid-cols-3 md:inline-flex h-auto">
             <TabsTrigger
               value="salon"
-              className="rounded-lg px-4 py-2 data-[state=active]:bg-card data-[state=active]:shadow-sm"
+              className="rounded-lg px-2 md:px-4 py-2.5 text-xs md:text-sm data-[state=active]:bg-card data-[state=active]:shadow-sm"
             >
               Salón Principal
             </TabsTrigger>
             <TabsTrigger
               value="terraza"
-              className="rounded-lg px-4 py-2 data-[state=active]:bg-card data-[state=active]:shadow-sm"
+              className="rounded-lg px-2 md:px-4 py-2.5 text-xs md:text-sm data-[state=active]:bg-card data-[state=active]:shadow-sm"
             >
               Terraza
             </TabsTrigger>
             <TabsTrigger
               value="vip"
-              className="rounded-lg px-4 py-2 data-[state=active]:bg-card data-[state=active]:shadow-sm"
+              className="rounded-lg px-2 md:px-4 py-2.5 text-xs md:text-sm data-[state=active]:bg-card data-[state=active]:shadow-sm"
             >
               VIP
             </TabsTrigger>
@@ -189,7 +190,7 @@ export function TablesGrid() {
         </div>
 
         <TabsContent value={activeZone} className="mt-0">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
             {filteredTables.map((table) => (
               <TableCard
                 key={table.id}
