@@ -33,7 +33,7 @@ export function TablesGrid() {
   const { currentUser, currentRole } = usePermissions();
   const { canAccessVentaRapida, canAccessVentaManual } = useModuleAccess();
   
-  const [activeZone, setActiveZone] = useState("salon");
+  const activeZone = "salon";
   const [tables, setTables] = useState<Table[]>(initialTables);
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [showQuickSale, setShowQuickSale] = useState(false);
