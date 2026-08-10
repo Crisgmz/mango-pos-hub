@@ -150,63 +150,40 @@ export function TablesGrid() {
 
   return (
     <div className="flex-1 p-3 md:p-6 overflow-y-auto">
-      <Tabs value={activeZone} onValueChange={setActiveZone}>
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4 md:mb-6">
-          <TabsList className="bg-secondary p-1 rounded-xl w-full md:w-auto grid grid-cols-3 md:inline-flex h-auto">
-            <TabsTrigger
-              value="salon"
-              className="rounded-lg px-2 md:px-4 py-2.5 text-xs md:text-sm data-[state=active]:bg-card data-[state=active]:shadow-sm"
-            >
-              Salón Principal
-            </TabsTrigger>
-            <TabsTrigger
-              value="terraza"
-              className="rounded-lg px-2 md:px-4 py-2.5 text-xs md:text-sm data-[state=active]:bg-card data-[state=active]:shadow-sm"
-            >
-              Terraza
-            </TabsTrigger>
-            <TabsTrigger
-              value="vip"
-              className="rounded-lg px-2 md:px-4 py-2.5 text-xs md:text-sm data-[state=active]:bg-card data-[state=active]:shadow-sm"
-            >
-              VIP
-            </TabsTrigger>
-          </TabsList>
-
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-success" />
-              <span className="text-sm text-muted-foreground">
-                {availableCount} disponibles
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-warning" />
-              <span className="text-sm text-muted-foreground">
-                {occupiedCount} ocupadas
-              </span>
-            </div>
+      <div className="flex items-center justify-between gap-3 mb-4 md:mb-6">
+        <h2 className="text-base md:text-lg font-semibold">Salón Principal</h2>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-success" />
+            <span className="text-sm text-muted-foreground">
+              {availableCount} disponibles
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-warning" />
+            <span className="text-sm text-muted-foreground">
+              {occupiedCount} ocupadas
+            </span>
           </div>
         </div>
+      </div>
 
-        <TabsContent value={activeZone} className="mt-0">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
-            {filteredTables.map((table) => (
-              <TableCard
-                key={table.id}
-                code={table.code}
-                status={table.status}
-                guests={table.guests}
-                time={table.time}
-                total={table.total}
-                waiterName={table.waiterName}
-                isOwnTable={table.waiterId === currentUser?.id}
-                onClick={() => handleTableClick(table)}
-              />
-            ))}
-          </div>
-        </TabsContent>
-      </Tabs>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+        {filteredTables.map((table) => (
+          <TableCard
+            key={table.id}
+            code={table.code}
+            status={table.status}
+            guests={table.guests}
+            time={table.time}
+            total={table.total}
+            waiterName={table.waiterName}
+            isOwnTable={table.waiterId === currentUser?.id}
+            onClick={() => handleTableClick(table)}
+          />
+        ))}
+      </div>
+
 
       {/* PIN Verification Modal */}
       <PinVerificationModal
