@@ -167,7 +167,7 @@
   }
 
   .table-card {
-    @apply card-interactive p-4 min-h-[120px] flex flex-col justify-between;
+    @apply card-interactive p-3 min-h-[104px] md:p-4 md:min-h-[120px] flex flex-col justify-between;
   }
 
   .table-available {
@@ -179,7 +179,7 @@
   }
 
   .sidebar-module {
-    @apply w-56 bg-card border-r border-border h-full;
+    @apply w-16 lg:w-56 bg-card border-r border-border h-full shrink-0 overflow-y-auto;
   }
 
   .page-header {
