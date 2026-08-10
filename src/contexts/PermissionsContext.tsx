@@ -108,11 +108,15 @@ export function usePermissions() {
 
 // Helper hook for checking specific module access
 export function useModuleAccess() {
-  const { hasPermission, hasAnyPermission } = usePermissions();
+  const { hasPermission, hasAnyPermission, currentRole } = usePermissions();
+
+  // Los meseros trabajan exclusivamente con venta por zona
+  const isWaiter = currentRole === "Mesero";
 
   return {
     canAccessVentas: hasPermission("ventas.mesas.acceso"),
-    canAccessVentaRapida: hasPermission("ventas_rapida.acceso"),
+    canAccessVentaRapida: !isWaiter && hasPermission("ventas_rapida.acceso"),
+    canAccessVentaManual: !isWaiter && hasPermission("ventas.mesas.acceso"),
     canAccessCaja: hasAnyPermission(["caja.apertura", "caja.cierre", "caja.arqueo_ver"]),
     canAccessCocina: hasPermission("kds.acceso"),
     canAccessReportes: hasAnyPermission([
