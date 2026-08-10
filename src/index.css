@@ -167,7 +167,7 @@
   }
 
   .table-card {
-    @apply card-interactive p-3 min-h-[104px] md:p-4 md:min-h-[120px] flex flex-col justify-between;
+    @apply card-interactive p-3 min-h-[104px] md:p-4 md:min-h-0 md:aspect-[4/3] lg:aspect-auto lg:min-h-[128px] flex flex-col justify-between;
   }
 
   .table-available {
