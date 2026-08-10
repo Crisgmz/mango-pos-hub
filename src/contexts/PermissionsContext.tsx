@@ -117,6 +117,8 @@ export function useModuleAccess() {
     canAccessVentas: hasPermission("ventas.mesas.acceso"),
     canAccessVentaRapida: !isWaiter && hasPermission("ventas_rapida.acceso"),
     canAccessVentaManual: !isWaiter && hasPermission("ventas.mesas.acceso"),
+    canAccessDelivery: !isWaiter,
+    canAccessSelfService: !isWaiter,
     canAccessCaja: hasAnyPermission(["caja.apertura", "caja.cierre", "caja.arqueo_ver"]),
     canAccessCocina: hasPermission("kds.acceso"),
     canAccessReportes: hasAnyPermission([

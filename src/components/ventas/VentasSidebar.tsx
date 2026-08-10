@@ -13,14 +13,14 @@ import { cn } from "@/lib/utils";
 export function VentasSidebar() {
   const [searchParams] = useSearchParams();
   const currentMode = searchParams.get("mode") || "zona";
-  const { canAccessVentas, canAccessVentaRapida, canAccessVentaManual } = useModuleAccess();
+  const { canAccessVentas, canAccessVentaRapida, canAccessVentaManual, canAccessDelivery, canAccessSelfService } = useModuleAccess();
 
   const menuItems = [
     { id: "zona", label: "Por Zona", icon: LayoutGrid, href: "/ventas", hasAccess: canAccessVentas },
     { id: "manual", label: "Venta Manual", icon: FileText, href: "/ventas?mode=manual", hasAccess: canAccessVentaManual },
     { id: "rapida", label: "Venta Rápida", icon: Zap, href: "/ventas?mode=rapida", hasAccess: canAccessVentaRapida },
-    { id: "delivery", label: "Delivery", icon: Truck, href: "/ventas?mode=delivery", hasAccess: true },
-    { id: "selfservice", label: "Self Service", icon: Smartphone, href: "/ventas?mode=selfservice", hasAccess: true },
+    { id: "delivery", label: "Delivery", icon: Truck, href: "/ventas?mode=delivery", hasAccess: canAccessDelivery },
+    { id: "selfservice", label: "Self Service", icon: Smartphone, href: "/ventas?mode=selfservice", hasAccess: canAccessSelfService },
   ];
 
   return (
