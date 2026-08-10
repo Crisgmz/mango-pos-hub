@@ -5,7 +5,6 @@ import {
   Zap, 
   Truck, 
   Smartphone,
-  Lock 
 } from "lucide-react";
 import { useModuleAccess } from "@/contexts/PermissionsContext";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -29,28 +28,11 @@ export function VentasSidebar() {
       <h3 className="hidden lg:block text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
         Modo de Venta
       </h3>
-      {menuItems.map((item) => {
+      {menuItems.filter((item) => item.hasAccess).map((item) => {
         const Icon = item.icon;
         const isActive = 
           (item.id === "zona" && !searchParams.get("mode")) ||
           currentMode === item.id;
-
-        if (!item.hasAccess) {
-          return (
-            <Tooltip key={item.id}>
-              <TooltipTrigger asChild>
-                <div
-                  className="flex items-center justify-center lg:justify-start gap-3 px-2 lg:px-3 py-3 lg:py-2.5 rounded-lg text-muted-foreground/50 cursor-not-allowed"
-                >
-                  <Icon className="w-5 h-5 shrink-0" />
-                  <span className="hidden lg:inline font-medium flex-1">{item.label}</span>
-                  <Lock className="hidden lg:inline w-3.5 h-3.5" />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="right">{item.label} — sin acceso</TooltipContent>
-            </Tooltip>
-          );
-        }
 
         return (
           <Tooltip key={item.id}>
