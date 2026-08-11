@@ -5,6 +5,7 @@ import { OrderScreen } from "./OrderScreen";
 import { QuickSaleScreen } from "./QuickSaleScreen";
 import { ManualSaleScreen } from "./ManualSaleScreen";
 import { PinVerificationModal } from "@/components/auth/PinVerificationModal";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { Table } from "@/types/pos";
 import { usePermissions, useModuleAccess } from "@/contexts/PermissionsContext";
@@ -27,22 +28,29 @@ const initialTables: Table[] = [
   { id: "14", code: "VIP02", status: "ocupado", guests: 8, time: "2:00:00", total: 12500, zone: "vip", waiterId: "5", waiterName: "Luis García" },
 ];
 
+const zones = [
+  { id: "salon", label: "Salón Principal" },
+  { id: "terraza", label: "Terraza" },
+  { id: "vip", label: "VIP" },
+];
+
 export function TablesGrid() {
   const [searchParams] = useSearchParams();
   const mode = searchParams.get("mode");
   const { currentUser, currentRole } = usePermissions();
   const { canAccessVentaRapida, canAccessVentaManual } = useModuleAccess();
-  
-  const activeZone = "salon";
+
+  const [activeZone, setActiveZone] = useState("salon");
   const [tables, setTables] = useState<Table[]>(initialTables);
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [showQuickSale, setShowQuickSale] = useState(false);
   const [showManualSale, setShowManualSale] = useState(false);
-  
+
   // PIN verification state
   const [showPinVerification, setShowPinVerification] = useState(false);
   const [pendingTable, setPendingTable] = useState<Table | null>(null);
 
+  const activeZoneLabel = zones.find((z) => z.id === activeZone)?.label || "Zona";
   const filteredTables = tables.filter((table) => table.zone === activeZone);
   const occupiedCount = filteredTables.filter((t) => t.status === "ocupado").length;
   const availableCount = filteredTables.filter((t) => t.status === "disponible").length;
@@ -120,14 +128,14 @@ export function TablesGrid() {
       setTables((prev) =>
         prev.map((t) =>
           t.id === tableId
-            ? { 
-                ...t, 
-                status: "disponible" as const, 
-                guests: undefined, 
-                time: undefined, 
+            ? {
+                ...t,
+                status: "disponible" as const,
+                guests: undefined,
+                time: undefined,
                 total: undefined,
                 waiterId: undefined,
-                waiterName: undefined 
+                waiterName: undefined,
               }
             : t
         )
@@ -150,22 +158,34 @@ export function TablesGrid() {
 
   return (
     <div className="flex-1 p-3 md:p-6 overflow-y-auto">
-      <div className="flex items-center justify-between gap-3 mb-4 md:mb-6">
-        <h2 className="text-base md:text-lg font-semibold">Salón Principal</h2>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-success" />
-            <span className="text-sm text-muted-foreground">
-              {availableCount} disponibles
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-warning" />
-            <span className="text-sm text-muted-foreground">
-              {occupiedCount} ocupadas
-            </span>
+      <div className="flex flex-col gap-3 md:gap-4 mb-4 md:mb-6">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-base md:text-lg font-semibold">{activeZoneLabel}</h2>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-success" />
+              <span className="text-sm text-muted-foreground">
+                {availableCount} disponibles
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-warning" />
+              <span className="text-sm text-muted-foreground">
+                {occupiedCount} ocupadas
+              </span>
+            </div>
           </div>
         </div>
+
+        <Tabs value={activeZone} onValueChange={setActiveZone}>
+          <TabsList className="w-full grid grid-cols-3 h-auto">
+            {zones.map((zone) => (
+              <TabsTrigger key={zone.id} value={zone.id} className="text-sm py-2">
+                {zone.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
@@ -183,7 +203,6 @@ export function TablesGrid() {
           />
         ))}
       </div>
-
 
       {/* PIN Verification Modal */}
       <PinVerificationModal
